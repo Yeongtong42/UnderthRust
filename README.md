@@ -1,2 +1,2 @@
 # UnderthRust
-Implementing Algorithms in Rust.
+Implementing Data-structures and Algorithms in Rust.
