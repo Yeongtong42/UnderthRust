@@ -4,3 +4,4 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+binary_heap = { path = "../collections/binary_heap"}
