@@ -2,6 +2,8 @@
 #![allow(unused_macros)]
 #![allow(dead_code)]
 
+use std::cmp::Ordering;
+
 pub trait Comparator<T> {
 	fn compare(&self, a : &T, b : &T) -> std::cmp::Ordering;
 }
@@ -37,20 +39,19 @@ where
 		((i + 1) << 1) + 1 - 1
 	}
 
-	fn min_heapify(self : &mut Self, i : usize) {
-		let data = &mut self.data;
+	fn min_heapify(data : &mut Vec<T>, comp : &impl Comparator<T>, i : usize) {
 		let l = Self::get_left(i);
 		let r = Self::get_right(i);
 		let mut s = i;
-		if l < data.len() && std::cmp::Ordering::Less == self.comparator.compare(&data[l],&data[s])   {
+		if l < data.len() && Ordering::Less == comp.compare(&data[l],&data[s])   {
 			s = l;
 		}
-		if r < data.len() && std::cmp::Ordering::Less == self.comparator.compare(&data[r],&data[s])   {
+		if r < data.len() && Ordering::Less == comp.compare(&data[r],&data[s])   {
 			s = r;
 		}
 		if s != i {
 			data.swap(i, s);
-			self.min_heapify(s);
+			Self::min_heapify(data, comp, s);	// push down
 		}
 	}
 
@@ -62,7 +63,6 @@ where
 		self.data.is_empty()
 	}
 
-	// top, ref 반환
 	pub fn top(&self) -> Option<&T> {
 		Some(&self.data[0])
 	}
