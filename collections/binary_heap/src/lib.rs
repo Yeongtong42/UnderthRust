@@ -15,7 +15,7 @@ impl<T:Ord> Comparator<T> for DefaultComparator {
 	}
 }
 
-pub struct MinHeap<T : Ord, C: Comparator<T>> {
+pub struct MinHeap<T, C: Comparator<T>> {
 	data: Vec<T>,
 	comparator: C,
 }
