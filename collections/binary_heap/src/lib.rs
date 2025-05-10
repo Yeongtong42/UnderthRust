@@ -37,6 +37,23 @@ where
 		((i + 1) << 1) + 1 - 1
 	}
 
+	fn min_heapify(self : &mut Self, i : usize) {
+		let data = &mut self.data;
+		let l = Self::get_left(i);
+		let r = Self::get_right(i);
+		let mut s = i;
+		if l < data.len() && std::cmp::Ordering::Less == self.comparator.compare(&data[l],&data[s])   {
+			s = l;
+		}
+		if r < data.len() && std::cmp::Ordering::Less == self.comparator.compare(&data[r],&data[s])   {
+			s = r;
+		}
+		if s != i {
+			data.swap(i, s);
+			self.min_heapify(s);
+		}
+	}
+
 	pub fn len(&self) -> usize {
 		self.data.len()
 	}
