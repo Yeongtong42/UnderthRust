@@ -55,6 +55,13 @@ where
 		}
 	}
 
+	fn build_heap(data : &mut Vec<T>, comp : &impl Comparator<T>) {
+		let offset = data.len() / 2 - 1;
+		for i in offset..=0 {
+			Self::min_heapify(data, comp, i);
+		}
+	}
+
 	pub fn len(&self) -> usize {
 		self.data.len()
 	}
