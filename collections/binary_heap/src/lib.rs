@@ -62,6 +62,23 @@ where
 		}
 	}
 
+	pub fn new() -> MinHeap<T, C> {
+		MinHeap {
+			data : Vec::new(),
+			comparator : C::default(),
+		}
+	}
+
+	pub fn from_vec(vec : Vec<T>) -> MinHeap<T, C> {
+		let mut vec = vec;
+		let comparator = C::default();
+		Self::build_heap(&mut vec, &comparator);
+		MinHeap {
+			data : vec,
+			comparator,
+		}
+	}
+
 	pub fn len(&self) -> usize {
 		self.data.len()
 	}
