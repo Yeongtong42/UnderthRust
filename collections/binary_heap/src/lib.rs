@@ -36,4 +36,17 @@ where
 	fn get_right(i : usize) -> usize {
 		((i + 1) << 1) + 1 - 1
 	}
+
+	pub fn len(&self) -> usize {
+		self.data.len()
+	}
+
+	pub fn is_empty(&self) -> bool {
+		self.data.is_empty()
+	}
+
+	// top, ref 반환
+	pub fn top(&self) -> Option<&T> {
+		Some(&self.data[0])
+	}
 }
