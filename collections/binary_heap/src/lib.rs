@@ -79,6 +79,21 @@ where
 		}
 	}
 
+	pub fn push(&mut self, elem : T) {
+		let data = &mut self.data;
+		data.push(elem);
+		let mut cur_idx = data.len() - 1;
+		let mut parent_idx = Self::get_parent(cur_idx);
+		while parent_idx < data.len()
+			&& cur_idx < data.len()
+			&& std::cmp::Ordering::Greater == self.comparator.compare(&data[parent_idx], &data[cur_idx])
+		{
+			data.swap(parent_idx, cur_idx);	// pull up
+			cur_idx = parent_idx;
+			parent_idx = Self::get_parent(parent_idx);
+		}
+	}
+
 	pub fn len(&self) -> usize {
 		self.data.len()
 	}
