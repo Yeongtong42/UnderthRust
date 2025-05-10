@@ -94,6 +94,17 @@ where
 		}
 	}
 
+	pub fn pop(&mut self) -> Option<T> {
+		let data = &mut self.data;
+		let end_idx = data.len() - 1;
+		if data.len() > 1 as usize {
+			data.swap(0, end_idx);
+		}
+		let result = data.pop();
+		Self::min_heapify(data, &self.comparator, 0);
+		result
+	}
+
 	pub fn len(&self) -> usize {
 		self.data.len()
 	}
