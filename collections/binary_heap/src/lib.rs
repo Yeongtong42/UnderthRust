@@ -1,13 +1,52 @@
-
+//!
+//! # Description
+//! Introduction to Algorithm의 BinaryHeap을 구현한다.
+//! 기존에 prelude에 Max heap이 있으므로, min heap으로 구현한다.
+//!
+//! # Implementation
+//! ## Traits
+//! ### Ord
+//! heap tree 내에서 데이터의 순서를 얻기 위한 비교 방법을 표현한 trait
+//! 비교는 std::cmp로 이루어지며, Ordering 이라는 enum을 반환함
+//! variant로는 Greater, Equal, Less의 3종이 존재
+//!
+//! ### comparator
+//! Ord trait이 없는 T, 혹은 기존의 Ord와는 다른 기준으로 정렬을 위해 도입한 trait
+//! 임의 타입 T에 대한 ref를 둘 받아서 Ordering을 반환함
+//! inline을 위하여 trait을 monomorphization 할 필요가 있음
+//!
+//! 만약, T가 Ord를 갖추었다면, DefaultComparator를 제공한다.
+//!
+//! ## Generic type
+//! ### T
+//! 실제 저장하게 될 데이터의 타입
+//! ### C
+//! Comparator trait을 구현한 임의의 객체
+//!
+//! ## Field
+//! ### data - Vec<T>
+//! 실제 데이터를 소유하는 collection
+//! memory management는 Vec의 method에 일임한다
+//!
+//! ### comparator
+//! Comparator trait의 구현체.
+//!
+//! ## priority_queue in C++
+//! 실제 container가 아닌, container에 api를 추가한 adaptor, 내부 구현 선택 가능
+//! 기본적으로 연산자 오버로딩을 통한 max heap, 다만, comparator를 전달하여 임의 순서 가능
+//! comparator는 두 원소를 비교하고 bool을 반환하는 함수객체, 반환값이 true라면 swap한다
+//!
 #![allow(unused_macros)]
 #![allow(dead_code)]
 
 use std::cmp::Ordering;
 
+/// user decidable compare, inlining needed
 pub trait Comparator<T> {
 	fn compare(&self, a : &T, b : &T) -> std::cmp::Ordering;
 }
 
+/// Default comparator for type T with Ord trait.
 #[derive(Default)]
 pub struct DefaultComparator;
 impl<T:Ord> Comparator<T> for DefaultComparator {
@@ -39,6 +78,9 @@ where
 		((i + 1) << 1) + 1 - 1
 	}
 
+	/// # Description
+	/// keep invariant for heap tree
+	/// for performace reason, comp.compare()'s inlining is crucial
 	fn min_heapify(data : &mut Vec<T>, comp : &impl Comparator<T>, i : usize) {
 		let l = Self::get_left(i);
 		let r = Self::get_right(i);
@@ -86,7 +128,7 @@ where
 		let mut parent_idx = Self::get_parent(cur_idx);
 		while parent_idx < data.len()
 			&& cur_idx < data.len()
-			&& std::cmp::Ordering::Greater == self.comparator.compare(&data[parent_idx], &data[cur_idx])
+			&& Ordering::Greater == self.comparator.compare(&data[parent_idx], &data[cur_idx])
 		{
 			data.swap(parent_idx, cur_idx);	// pull up
 			cur_idx = parent_idx;
