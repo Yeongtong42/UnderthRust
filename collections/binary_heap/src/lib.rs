@@ -63,38 +63,38 @@ pub struct MinHeap<T, C: Comparator<T>> {
 	comparator: C,
 }
 
+/// TODO : change it to macro function
+
+/// helper function for heap tree, get index of parent node
+/// note : get_parent(0) is usize::max, will always be bigger than data.len()
+#[inline]
+fn get_parent(i : usize) -> usize {
+	((i + 1) >> 1).wrapping_sub(1)
+}
+
+/// helper function for heap tree, get index of left child node
+#[inline]
+fn get_left(i : usize) -> usize {
+	((i + 1) << 1) - 1
+}
+
+/// helper function for heap tree, get index of right child node
+#[inline]
+fn get_right(i : usize) -> usize {
+	((i + 1) << 1) + 1 - 1
+}
+
 impl<T, C> MinHeap<T, C>
 where
 	C : Comparator<T>
 {
-	/// TODO : change it to macro function
-
-	/// helper function for heap tree, get index of parent node
-	/// note : get_parent(0) is usize::max, will always be bigger than data.len()
-	#[inline]
-	fn get_parent(i : usize) -> usize {
-		((i + 1) >> 1).wrapping_sub(1)
-	}
-
-	/// helper function for heap tree, get index of left child node
-	#[inline]
-	fn get_left(i : usize) -> usize {
-		((i + 1) << 1) - 1
-	}
-
-	/// helper function for heap tree, get index of right child node
-	#[inline]
-	fn get_right(i : usize) -> usize {
-		((i + 1) << 1) + 1 - 1
-	}
-
 	/// keep order of heap tree
 	/// child nodes are bigger than it's parent node
 	/// for performace reason, comp.compare()'s inlining is crucial
 	/// O(log n)
 	fn min_heapify(data : &mut Vec<T>, comp : &impl Comparator<T>, i : usize) {
-		let l = Self::get_left(i);
-		let r = Self::get_right(i);
+		let l = get_left(i);
+		let r = get_right(i);
 		let mut s = i;
 		if l < data.len() && Ordering::Less == comp.compare(&data[l],&data[s])   {
 			s = l;
@@ -141,14 +141,14 @@ where
 		let data = &mut self.data;
 		data.push(elem);
 		let mut cur_idx = data.len() - 1;
-		let mut parent_idx = Self::get_parent(cur_idx);
+		let mut parent_idx = get_parent(cur_idx);
 		while parent_idx < data.len()
 			&& cur_idx < data.len()
 			&& Ordering::Greater == self.comparator.compare(&data[parent_idx], &data[cur_idx])
 		{
 			data.swap(parent_idx, cur_idx);	// pull up
 			cur_idx = parent_idx;
-			parent_idx = Self::get_parent(parent_idx);
+			parent_idx = get_parent(parent_idx);
 		}
 	}
 
