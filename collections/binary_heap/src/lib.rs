@@ -137,6 +137,12 @@ where
 		}
 	}
 
+	pub fn extend(&mut self, elems : &mut Vec<T>) {
+		let data = &mut self.data;
+		data.append(elems);
+		Self::build_heap(data,&self.comparator);
+	}
+
 	pub fn pop(&mut self) -> Option<T> {
 		let data = &mut self.data;
 		let end_idx = data.len() - 1;
