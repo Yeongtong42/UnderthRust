@@ -214,7 +214,7 @@ use rand::{Rng, SeedableRng};
 
 		let mut vec1 : Vec<i32> = Vec::new();
 		MinHeap::<i32, DefaultComparator>::build_heap(&mut vec1, &dcomp);
-		assert_eq!(true, is_min_heaped(&vec1, &dcomp));
+		assert!(is_min_heaped(&vec1, &dcomp));
 	}
 
 	#[test]
@@ -223,7 +223,7 @@ use rand::{Rng, SeedableRng};
 
 		let mut vec1 : Vec<i32> = vec![0i32;1];
 		MinHeap::<i32, DefaultComparator>::build_heap(&mut vec1, &dcomp);
-		assert_eq!(true, is_min_heaped(&vec1, &dcomp));
+		assert!(is_min_heaped(&vec1, &dcomp));
 	}
 
 	#[test]
@@ -232,7 +232,7 @@ use rand::{Rng, SeedableRng};
 
 		let mut vec1 : Vec<i32> = (0..45i32).collect();
 		MinHeap::<i32, DefaultComparator>::build_heap(&mut vec1, &dcomp);
-		assert_eq!(true, is_min_heaped(&vec1, &dcomp));
+		assert!(is_min_heaped(&vec1, &dcomp));
 	}
 	#[test]
 	fn test_build_heap_reverse_ordered() {
@@ -240,7 +240,7 @@ use rand::{Rng, SeedableRng};
 
 		let mut vec1 : Vec<i32> = (0..45i32).rev().collect();
 		MinHeap::<i32, DefaultComparator>::build_heap(&mut vec1, &dcomp);
-		assert_eq!(true, is_min_heaped(&vec1, &dcomp));
+		assert!(is_min_heaped(&vec1, &dcomp));
 	}
 	#[test]
 	fn test_build_heap_random() {
@@ -255,7 +255,7 @@ use rand::{Rng, SeedableRng};
 			.collect();
 
 		MinHeap::<i32, DefaultComparator>::build_heap(&mut vec1, &dcomp);
-		assert_eq!(true, is_min_heaped(&vec1, &dcomp));
+		assert!(is_min_heaped(&vec1, &dcomp));
 	}
 
 	#[test]
@@ -264,7 +264,7 @@ use rand::{Rng, SeedableRng};
 
 		let mut vec0 : Vec<u32> = Vec::new();
 		MinHeap::<u32, DefaultComparator>::min_heapify(&mut vec0, &dcomp, 0);
-		assert_eq!(true, is_min_heaped(&vec0, &dcomp));
+		assert!(is_min_heaped(&vec0, &dcomp));
 	}
 	#[test]
 	fn test_heapifiy_one() {
@@ -272,7 +272,7 @@ use rand::{Rng, SeedableRng};
 
 		let mut vec1 : Vec<u32> = vec![0];
 		MinHeap::<u32, DefaultComparator>::min_heapify(&mut vec1, &dcomp, 0);
-		assert_eq!(true, is_min_heaped(&vec1, &dcomp));
+		assert!(is_min_heaped(&vec1, &dcomp));
 	}
 	#[test]
 	fn test_heapifiy_general() {
@@ -280,10 +280,10 @@ use rand::{Rng, SeedableRng};
 
 		let mut vec2: Vec<u32> = vec![4, 1, 2, 3, 6, 7, 8];
 		MinHeap::<u32, DefaultComparator>::min_heapify(&mut vec2, &dcomp, 0);
-		assert_eq!(true, is_min_heaped(&vec2, &dcomp));
+		assert!(is_min_heaped(&vec2, &dcomp));
 
 		let mut vec3: Vec<u32> = vec![1, 2, 3, 99, 5, 6, 7];
 		MinHeap::<u32, DefaultComparator>::min_heapify(&mut vec3, &dcomp, 3);
-		assert_eq!(true, is_min_heaped(&vec3, &dcomp));
+		assert!(is_min_heaped(&vec3, &dcomp));
 	}
 }
