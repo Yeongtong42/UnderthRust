@@ -182,8 +182,15 @@ where
 	}
 
 	pub fn top(&self) -> Option<&T> {
+		if self.data.is_empty() {
+			return None;
+		}
 		Some(&self.data[0])
 	}
+
+	// pick mut trait
+
+	// from iter trait
 }
 
 #[cfg(test)]
