@@ -185,3 +185,105 @@ where
 		Some(&self.data[0])
 	}
 }
+
+#[cfg(test)]
+mod tests {
+    use std::cmp::Ordering;
+	use rand::distr::StandardUniform;
+use rand::{Rng, SeedableRng};
+	use rand::rngs::StdRng;
+
+	use crate::Comparator;
+
+    use crate::{DefaultComparator, MinHeap};
+
+	fn is_min_heaped<T, C : Comparator<T>>(vec : &Vec<T>, comp : &C) -> bool {
+		for i in (1..vec.len()).rev() {
+			let current = &vec[i];
+			let parent = &vec[super::get_parent(i)];
+			if let Ordering::Greater = comp.compare(parent, current) {
+				return false;
+			}
+		}
+		true
+	}
+
+	#[test]
+	fn test_build_heap_empty() {
+		let dcomp = DefaultComparator;
+
+		let mut vec1 : Vec<i32> = Vec::new();
+		MinHeap::<i32, DefaultComparator>::build_heap(&mut vec1, &dcomp);
+		assert_eq!(true, is_min_heaped(&vec1, &dcomp));
+	}
+
+	#[test]
+	fn test_build_heap_one() {
+		let dcomp = DefaultComparator;
+
+		let mut vec1 : Vec<i32> = vec![0i32;1];
+		MinHeap::<i32, DefaultComparator>::build_heap(&mut vec1, &dcomp);
+		assert_eq!(true, is_min_heaped(&vec1, &dcomp));
+	}
+
+	#[test]
+	fn test_build_heap_ordered() {
+		let dcomp = DefaultComparator;
+
+		let mut vec1 : Vec<i32> = (0..45i32).collect();
+		MinHeap::<i32, DefaultComparator>::build_heap(&mut vec1, &dcomp);
+		assert_eq!(true, is_min_heaped(&vec1, &dcomp));
+	}
+	#[test]
+	fn test_build_heap_reverse_ordered() {
+		let dcomp = DefaultComparator;
+
+		let mut vec1 : Vec<i32> = (0..45i32).rev().collect();
+		MinHeap::<i32, DefaultComparator>::build_heap(&mut vec1, &dcomp);
+		assert_eq!(true, is_min_heaped(&vec1, &dcomp));
+	}
+	#[test]
+	fn test_build_heap_random() {
+		let dcomp = DefaultComparator;
+
+		let seed: u64 = 42;
+		let rng = StdRng::seed_from_u64(seed);
+
+		let mut vec1: Vec<i32> = rng
+			.sample_iter(StandardUniform)
+			.take(1000_000)
+			.collect();
+
+		MinHeap::<i32, DefaultComparator>::build_heap(&mut vec1, &dcomp);
+		assert_eq!(true, is_min_heaped(&vec1, &dcomp));
+	}
+
+	#[test]
+	fn test_heapifiy_empty() {
+		let dcomp = DefaultComparator;
+
+		let mut vec0 : Vec<u32> = Vec::new();
+		MinHeap::<u32, DefaultComparator>::min_heapify(&mut vec0, &dcomp, 0);
+		assert_eq!(true, is_min_heaped(&vec0, &dcomp));
+	}
+	#[test]
+	fn test_heapifiy_one() {
+		let dcomp = DefaultComparator;
+
+		let mut vec1 : Vec<u32> = vec![0];
+		MinHeap::<u32, DefaultComparator>::min_heapify(&mut vec1, &dcomp, 0);
+		assert_eq!(true, is_min_heaped(&vec1, &dcomp));
+	}
+	#[test]
+	fn test_heapifiy_general() {
+		let dcomp = DefaultComparator;
+
+		let mut vec2: Vec<u32> = vec![4, 1, 2, 3, 6, 7, 8];
+		MinHeap::<u32, DefaultComparator>::min_heapify(&mut vec2, &dcomp, 0);
+		assert_eq!(true, is_min_heaped(&vec2, &dcomp));
+
+		let mut vec3: Vec<u32> = vec![1, 2, 3, 99, 5, 6, 7];
+		MinHeap::<u32, DefaultComparator>::min_heapify(&mut vec3, &dcomp, 3);
+		assert_eq!(true, is_min_heaped(&vec3, &dcomp));
+	}
+}
