@@ -63,11 +63,13 @@ pub struct MinHeap<T, C: Comparator<T>> {
 
 impl<T, C> MinHeap<T, C>
 where
-	C : Default + Comparator<T>
+	C : Comparator<T>
 {
+	/// note : get_parent(0) is usize::max, will always be bigger than data.len()
+	/// TODO : change it to macro function
 	#[inline]
 	fn get_parent(i : usize) -> usize {
-		((i + 1) >> 1) - 1
+		((i + 1) >> 1).wrapping_sub(1)
 	}
 	#[inline]
 	fn get_left(i : usize) -> usize {
@@ -98,22 +100,21 @@ where
 	}
 
 	fn build_heap(data : &mut Vec<T>, comp : &impl Comparator<T>) {
-		let offset = data.len() / 2 - 1;
-		for i in offset..=0 {
+		let offset = data.len() / 2;
+		for i in (0..offset).rev() {
 			Self::min_heapify(data, comp, i);
 		}
 	}
 
-	pub fn new() -> MinHeap<T, C> {
+	pub fn new(comp : C) -> MinHeap<T, C> {
 		MinHeap {
 			data : Vec::new(),
-			comparator : C::default(),
+			comparator : comp,
 		}
 	}
 
-	pub fn from_vec(vec : Vec<T>) -> MinHeap<T, C> {
-		let mut vec = vec;
-		let comparator = C::default();
+	pub fn from_vec(mut vec : Vec<T>, comp : C) -> MinHeap<T, C> {
+		let comparator = comp;
 		Self::build_heap(&mut vec, &comparator);
 		MinHeap {
 			data : vec,
