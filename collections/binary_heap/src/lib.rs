@@ -62,7 +62,6 @@ pub struct MinHeap<T, C: Comparator<T>> {
 	data: Vec<T>,
 	comparator: C,
 }
-
 /// TODO : change it to macro function
 
 /// helper function for heap tree, get index of parent node
@@ -84,39 +83,39 @@ fn get_right(i : usize) -> usize {
 	((i + 1) << 1) + 1 - 1
 }
 
+/// keep order of heap tree
+/// child nodes are bigger than it's parent node
+/// for performace reason, comp.compare()'s inlining is crucial
+/// O(log n)
+fn min_heapify<T>(data : &mut Vec<T>, comp : &impl Comparator<T>, i : usize) {
+	let l = get_left(i);
+	let r = get_right(i);
+	let mut s = i;
+	if l < data.len() && Ordering::Less == comp.compare(&data[l],&data[s])   {
+		s = l;
+	}
+	if r < data.len() && Ordering::Less == comp.compare(&data[r],&data[s])   {
+		s = r;
+	}
+	if s != i {
+		data.swap(i, s);
+		min_heapify(data, comp, s);	// push down
+	}
+}
+
+/// reorder vector to make heap tree
+/// O(n)
+fn build_heap<T>(data : &mut Vec<T>, comp : &impl Comparator<T>) {
+	let offset = data.len() / 2;
+	for i in (0..offset).rev() {
+		min_heapify(data, comp, i);
+	}
+}
+
 impl<T, C> MinHeap<T, C>
 where
 	C : Comparator<T>
 {
-	/// keep order of heap tree
-	/// child nodes are bigger than it's parent node
-	/// for performace reason, comp.compare()'s inlining is crucial
-	/// O(log n)
-	fn min_heapify(data : &mut Vec<T>, comp : &impl Comparator<T>, i : usize) {
-		let l = get_left(i);
-		let r = get_right(i);
-		let mut s = i;
-		if l < data.len() && Ordering::Less == comp.compare(&data[l],&data[s])   {
-			s = l;
-		}
-		if r < data.len() && Ordering::Less == comp.compare(&data[r],&data[s])   {
-			s = r;
-		}
-		if s != i {
-			data.swap(i, s);
-			Self::min_heapify(data, comp, s);	// push down
-		}
-	}
-
-	/// reorder vector to make heap tree
-	/// O(n)
-	fn build_heap(data : &mut Vec<T>, comp : &impl Comparator<T>) {
-		let offset = data.len() / 2;
-		for i in (0..offset).rev() {
-			Self::min_heapify(data, comp, i);
-		}
-	}
-
 	/// create empty min heap
 	pub fn new(comp : C) -> MinHeap<T, C> {
 		MinHeap {
@@ -128,7 +127,7 @@ where
 	/// create min heap with vector
 	pub fn from_vec(mut vec : Vec<T>, comp : C) -> MinHeap<T, C> {
 		let comparator = comp;
-		Self::build_heap(&mut vec, &comparator);
+		build_heap(&mut vec, &comparator);
 		MinHeap {
 			data : vec,
 			comparator,
@@ -157,7 +156,7 @@ where
 	pub fn extend(&mut self, elems : &mut Vec<T>) {
 		let data = &mut self.data;
 		data.append(elems);
-		Self::build_heap(data,&self.comparator);
+		build_heap(data,&self.comparator);
 	}
 
 	/// extract ownership of the element at root
@@ -169,7 +168,7 @@ where
 			data.swap(0, end_idx);
 		}
 		let result = data.pop();
-		Self::min_heapify(data, &self.comparator, 0);
+		min_heapify(data, &self.comparator, 0);
 		result
 	}
 
@@ -188,10 +187,9 @@ where
 		Some(&self.data[0])
 	}
 
-	// pick mut trait
-
 	// from iter trait
 }
+
 
 #[cfg(test)]
 mod tests {
@@ -202,7 +200,7 @@ use rand::{Rng, SeedableRng};
 
 	use crate::Comparator;
 
-    use crate::{DefaultComparator, MinHeap};
+    use crate::{DefaultComparator};
 
 	fn is_min_heaped<T, C : Comparator<T>>(vec : &Vec<T>, comp : &C) -> bool {
 		for i in (1..vec.len()).rev() {
@@ -220,7 +218,7 @@ use rand::{Rng, SeedableRng};
 		let dcomp = DefaultComparator;
 
 		let mut vec1 : Vec<i32> = Vec::new();
-		MinHeap::<i32, DefaultComparator>::build_heap(&mut vec1, &dcomp);
+		crate::build_heap(&mut vec1, &dcomp);
 		assert!(is_min_heaped(&vec1, &dcomp));
 	}
 
@@ -229,7 +227,7 @@ use rand::{Rng, SeedableRng};
 		let dcomp = DefaultComparator;
 
 		let mut vec1 : Vec<i32> = vec![0i32;1];
-		MinHeap::<i32, DefaultComparator>::build_heap(&mut vec1, &dcomp);
+		crate::build_heap(&mut vec1, &dcomp);
 		assert!(is_min_heaped(&vec1, &dcomp));
 	}
 
@@ -238,7 +236,7 @@ use rand::{Rng, SeedableRng};
 		let dcomp = DefaultComparator;
 
 		let mut vec1 : Vec<i32> = (0..45i32).collect();
-		MinHeap::<i32, DefaultComparator>::build_heap(&mut vec1, &dcomp);
+		crate::build_heap(&mut vec1, &dcomp);
 		assert!(is_min_heaped(&vec1, &dcomp));
 	}
 	#[test]
@@ -246,7 +244,7 @@ use rand::{Rng, SeedableRng};
 		let dcomp = DefaultComparator;
 
 		let mut vec1 : Vec<i32> = (0..45i32).rev().collect();
-		MinHeap::<i32, DefaultComparator>::build_heap(&mut vec1, &dcomp);
+		crate::build_heap(&mut vec1, &dcomp);
 		assert!(is_min_heaped(&vec1, &dcomp));
 	}
 	#[test]
@@ -261,7 +259,7 @@ use rand::{Rng, SeedableRng};
 			.take(1000_000)
 			.collect();
 
-		MinHeap::<i32, DefaultComparator>::build_heap(&mut vec1, &dcomp);
+		crate::build_heap(&mut vec1, &dcomp);
 		assert!(is_min_heaped(&vec1, &dcomp));
 	}
 
@@ -270,7 +268,7 @@ use rand::{Rng, SeedableRng};
 		let dcomp = DefaultComparator;
 
 		let mut vec0 : Vec<u32> = Vec::new();
-		MinHeap::<u32, DefaultComparator>::min_heapify(&mut vec0, &dcomp, 0);
+		crate::min_heapify(&mut vec0, &dcomp, 0);
 		assert!(is_min_heaped(&vec0, &dcomp));
 	}
 	#[test]
@@ -278,7 +276,7 @@ use rand::{Rng, SeedableRng};
 		let dcomp = DefaultComparator;
 
 		let mut vec1 : Vec<u32> = vec![0];
-		MinHeap::<u32, DefaultComparator>::min_heapify(&mut vec1, &dcomp, 0);
+		crate::min_heapify(&mut vec1, &dcomp, 0);
 		assert!(is_min_heaped(&vec1, &dcomp));
 	}
 	#[test]
@@ -286,11 +284,11 @@ use rand::{Rng, SeedableRng};
 		let dcomp = DefaultComparator;
 
 		let mut vec2: Vec<u32> = vec![4, 1, 2, 3, 6, 7, 8];
-		MinHeap::<u32, DefaultComparator>::min_heapify(&mut vec2, &dcomp, 0);
+		crate::min_heapify(&mut vec2, &dcomp, 0);
 		assert!(is_min_heaped(&vec2, &dcomp));
 
 		let mut vec3: Vec<u32> = vec![1, 2, 3, 99, 5, 6, 7];
-		MinHeap::<u32, DefaultComparator>::min_heapify(&mut vec3, &dcomp, 3);
+		crate::min_heapify(&mut vec3, &dcomp, 3);
 		assert!(is_min_heaped(&vec3, &dcomp));
 	}
 }
