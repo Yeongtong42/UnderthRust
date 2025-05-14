@@ -71,3 +71,39 @@ fn test_min_heap_extend() {
 	assert_eq!(pq.pop().unwrap(),21);
 	assert!(pq.is_empty());
 }
+
+#[test]
+fn test_peek_mut_deref() {
+	let dcomp = DefaultComparator;
+
+	let test_vec : Vec<u32> = vec![ 3, 2, 1, 5, 4];
+	let mut pq = MinHeap::<u32, DefaultComparator>::from_vec(test_vec, dcomp);
+
+	let pm = pq.peek_mut().unwrap();
+	assert_eq!(*pm, 1);
+}
+
+#[test]
+fn test_peek_mut_deref_mut() {
+	let dcomp = DefaultComparator;
+
+	let test_vec : Vec<u32> = vec![ 3, 2, 1, 5, 4];
+	let mut pq = MinHeap::<u32, DefaultComparator>::from_vec(test_vec, dcomp);
+
+	let mut pm = pq.peek_mut().unwrap();
+	*pm = 44;
+	std::mem::drop(pm);
+	assert_eq!(pq.pop().unwrap(), 2);
+}
+
+/*
+fn test_peek_mut_borrow() {
+	let dcomp = DefaultComparator;
+
+	let test_vec : Vec<u32> = vec![ 3, 2, 1, 5, 4];
+	let mut pq = MinHeap::<u32, DefaultComparator>::from_vec(test_vec, dcomp);
+
+	let mut pm = pq.peek_mut().unwrap();
+	pq.push(44);	// <- double borrow mutable ref of pq, borrow check error
+}
+*/

@@ -190,6 +190,79 @@ where
 	// from iter trait
 }
 
+use std::ops::{Deref, DerefMut};
+
+///
+/// # Description
+/// BinaryHeap의 PeekMut의 replica, MinHeap의 top에 대한 smart pointer.
+/// MinHeap의 root data에 대한 &와 &mut를 제공, MinHeap은 동결되며,
+/// drop될 때, min_heapify를 수행하여 invariant를 복원하며, &mut를 반환한다.
+///
+/// # Field
+/// - comp : 참조 대상인 MinHeap의 comparator
+/// - source : 참조 대상인 MinHeap의 data
+///
+/// # try-error
+/// 1. PeekMut의 원소로 &mut T와 &mut MinHeap을 주고, 각각 &mut self.data[0]와 self로 초기화
+/// 	-> MinHeap에 대한 &mut의 중복으로 실패.
+/// 2. PeekMut의 원소로 T와 &mut MinHeap을 주고, self.pop()과 self로 초기화
+/// 	-> drop 시 T를 self에 push하려고 하였으나, 소유권 이동에 실패.
+///
+pub struct PeekMut<'a, T, C: Comparator<T>> {
+	comp : &'a C,
+	source : &'a mut Vec<T>,
+}
+
+impl<T, C> MinHeap<T, C>
+where
+	C : Comparator<T>
+{
+	/// get mutable reference of root of binary heap
+	/// it's source will be heaped when the PeekMut drops
+	pub fn peek_mut<'a>(&'a mut self) -> Option<PeekMut<'a, T, C>> {
+		if true != self.is_empty() {
+			return Some(PeekMut {
+				comp : &self.comparator,
+				source : &mut self.data,
+			});
+		}
+		None
+	}
+}
+
+// deref trait
+impl<'a, T, C> Deref for PeekMut<'a, T, C>
+where
+	C : Comparator<T>
+{
+	type Target = T;
+    fn deref(&self) -> &Self::Target {
+		&self.source[0]
+	}
+}
+
+// deref mut trait
+impl<'a, T, C> DerefMut for PeekMut<'a, T, C>
+where
+	C : Comparator<T>
+{
+	fn deref_mut(&mut self) -> &mut Self::Target {
+		&mut self.source[0]
+	}
+
+}
+
+// drop trait
+impl<'a, T, C> Drop for PeekMut<'a, T, C>
+where
+	C : Comparator<T>
+{
+	/// recover invariant of heap tree
+	fn drop(&mut self) {
+		min_heapify(&mut self.source, self.comp, 0);
+	}
+}
+
 
 #[cfg(test)]
 mod tests {
