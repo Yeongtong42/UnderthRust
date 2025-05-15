@@ -107,3 +107,14 @@ fn test_peek_mut_borrow() {
 	pq.push(44);	// <- double borrow mutable ref of pq, borrow check error
 }
 */
+
+#[test]
+fn test_from_iter() {
+	let iter = [4u32, 3, 5, 1, 2, 0].into_iter();
+	let mut pq = MinHeap::<u32, DefaultComparator>::from_iter(iter);
+	assert_eq!(pq.pop().unwrap(), 0);
+
+	let iter2 = [4u32, 3, 5, 1, 2, 0].into_iter();
+	let mut pq2 : MinHeap<u32, DefaultComparator> = iter2.collect();
+	assert_eq!(pq2.pop().unwrap(), 0);
+}
