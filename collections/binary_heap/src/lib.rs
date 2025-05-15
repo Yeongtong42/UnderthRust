@@ -186,8 +186,6 @@ where
 		}
 		Some(&self.data[0])
 	}
-
-	// from iter trait
 }
 
 use std::ops::{Deref, DerefMut};
@@ -252,7 +250,8 @@ where
 
 }
 
-// drop trait
+/// drop trait for PeekMut
+/// recover invariant of it's MinHeap
 impl<'a, T, C> Drop for PeekMut<'a, T, C>
 where
 	C : Comparator<T>
@@ -260,6 +259,32 @@ where
 	/// recover invariant of heap tree
 	fn drop(&mut self) {
 		min_heapify(&mut self.source, self.comp, 0);
+	}
+}
+
+
+impl<T> FromIterator<T> for MinHeap<T, DefaultComparator>
+	where
+	T : Ord
+{
+	fn from_iter<I>(iter: I) -> Self
+	where
+		I: IntoIterator<Item = T>
+	{
+		let into_iter = iter.into_iter();
+		let hint_cap = match into_iter.size_hint() {
+			(lbound, Some(ubound)) => {
+				(lbound + ubound) / 2	// median
+			},
+			(lbound, None) => {
+				lbound
+			}
+		};
+		let mut result_buffer : Vec<T> = Vec::with_capacity(hint_cap);
+		for item in into_iter {
+			result_buffer.push(item);
+		}
+		MinHeap::<T, DefaultComparator>::from_vec(result_buffer, DefaultComparator)
 	}
 }
 
