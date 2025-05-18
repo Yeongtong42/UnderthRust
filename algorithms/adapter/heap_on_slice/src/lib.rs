@@ -42,7 +42,7 @@
 //! let mut slice = vec![1, 2, 3, 4, 5];
 //! comp.heapify(&mut slice);
 //! ```
-//! `MinHeap` trait을 사용하고자 하는 경우,
+//! `MaxHeap` trait을 사용하고자 하는 경우,
 //! ```
 //! use heap_on_slice::{*, max_heap::MaxHeap};
 //! let comp = DefaultComparator;

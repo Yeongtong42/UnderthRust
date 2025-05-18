@@ -40,7 +40,7 @@ impl<T: Ord> Comparator<T> for ReverseComparator {
 }
 
 /// # Reverse
-/// Comparaitor trait을 구현한 타입 C에 대해 order를 반전시켜 Comparator trait을 구현하는 wrapper struct.
+/// Comparator trait을 구현한 타입 C에 대해 order를 반전시켜 Comparator trait을 구현하는 wrapper struct.
 /// heap_on_slice모듈에서는 instance dependent comparator를 지원하기 위해, Reverse wrapper는 원본 comparator의 인스턴스에 대한 참조를 wrapping한다.
 /// Reverse struct을 통해 MinHeap trait을 사용하는 것은 MaxHeap trait을 사용하는 것과 동등하다.
 #[repr(transparent)]
