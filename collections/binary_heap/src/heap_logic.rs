@@ -130,7 +130,7 @@ mod tests {
 	}
 
 	#[test]
-	fn test_heapifiy_empty() {
+	fn test_heapify_empty() {
 		let dcomp = DefaultComparator;
 
 		let mut vec0 : Vec<u32> = Vec::new();
@@ -138,7 +138,7 @@ mod tests {
 		assert!(is_min_heaped(&vec0, &dcomp));
 	}
 	#[test]
-	fn test_heapifiy_one() {
+	fn test_heapify_one() {
 		let dcomp = DefaultComparator;
 
 		let mut vec1 : Vec<u32> = vec![0];
@@ -146,7 +146,7 @@ mod tests {
 		assert!(is_min_heaped(&vec1, &dcomp));
 	}
 	#[test]
-	fn test_heapifiy_general() {
+	fn test_heapify_general() {
 		let dcomp = DefaultComparator;
 
 		let mut vec2: Vec<u32> = vec![4, 1, 2, 3, 6, 7, 8];
