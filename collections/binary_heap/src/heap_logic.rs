@@ -3,6 +3,7 @@ use std::cmp::Ordering;
 use crate::comparator::*;
 
 /// helper function for heap tree, get index of parent node
+/// because of the original algorithm was based on 1-indexed, need to convert it to 0-indexed
 /// note : get_parent(0) is usize::max, will always be bigger than data.len()
 #[inline]
 pub fn get_parent(i : usize) -> usize {
@@ -10,12 +11,14 @@ pub fn get_parent(i : usize) -> usize {
 }
 
 /// helper function for heap tree, get index of left child node
+/// because of the original algorithm was based on 1-indexed, need to convert it to 0-indexed
 #[inline]
 fn get_left(i : usize) -> usize {
 	((i + 1) << 1) - 1
 }
 
 /// helper function for heap tree, get index of right child node
+/// because of the original algorithm was based on 1-indexed, need to convert it to 0-indexed
 #[inline]
 fn get_right(i : usize) -> usize {
 	((i + 1) << 1) + 1 - 1
@@ -28,7 +31,7 @@ fn get_right(i : usize) -> usize {
 ///
 /// # Performance
 /// Time complexity(worst) : O(log n)
-pub fn min_heapify<T>(data : &mut Vec<T>, comp : &impl Comparator<T>, i : usize) {
+pub fn min_heapify<T>(data : &mut [T], comp : &impl Comparator<T>, i : usize) {
 	let l = get_left(i);
 	let r = get_right(i);
 	let mut s = i;
@@ -49,7 +52,7 @@ pub fn min_heapify<T>(data : &mut Vec<T>, comp : &impl Comparator<T>, i : usize)
 ///
 /// # Performance
 /// Time complexity(worst) : O(n)
-pub fn build_heap<T>(data : &mut Vec<T>, comp : &impl Comparator<T>) {
+pub fn build_heap<T>(data : &mut [T], comp : &impl Comparator<T>) {
 	let offset = data.len() / 2;
 	for i in (0..offset).rev() {
 		min_heapify(data, comp, i);
