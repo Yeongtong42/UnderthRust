@@ -75,11 +75,12 @@ where
 	/// extract ownership of the element at root
 	/// O(log n)
 	pub fn pop(&mut self) -> Option<T> {
-		let data = &mut self.data;
-		let end_idx = data.len() - 1;
-		if data.len() > 1 as usize {
-			data.swap(0, end_idx);
+		if self.is_empty() {
+			return None;
 		}
+		let data = &mut self.data;
+		let end_idx = data.len() - 1;	// already checked the emptiness, no overflow
+		data.swap(0, end_idx);
 		let result = data.pop();
 		min_heapify(data, &self.comparator, 0);	// O(log n)
 		result
@@ -89,7 +90,7 @@ where
 	/// get mutable reference of root of binary heap
 	/// it's source will be heaped when the PeekMut drops
 	pub fn peek_mut<'a>(&'a mut self) -> Option<PeekMut<'a, T, C>> {
-		if true != self.is_empty() {
+		if !self.is_empty() {
 			return Some(PeekMut {
 				comp : &self.comparator,
 				source : &mut self.data,
