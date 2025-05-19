@@ -19,7 +19,7 @@
 use std::cmp::Ordering;
 use std::ops::{Deref, DerefMut};
 
-use crate::comparator::{Comparator, DefaultComparator};
+use crate::comparator::Comparator;
 use crate::heap_logic::{build_heap, get_parent, min_heapify};
 
 pub struct MinHeap<T, C: Comparator<T>> {
@@ -90,10 +90,7 @@ where
     /// get mutable reference of root of binary heap
     /// it's source will be heaped when the PeekMut drops
     pub fn peek_mut<'a>(&'a mut self) -> Option<PeekMut<'a, T, C>> {
-        (!self.is_empty()).then_some(PeekMut {
-            comp: &self.comparator,
-            source: &mut self.data,
-        })
+        (!self.is_empty()).then_some(PeekMut { source: self })
     }
 
     pub fn len(&self) -> usize {
@@ -138,8 +135,7 @@ where
 /// 	-> drop 시 T를 self에 push하려고 하였으나, 소유권 이동에 실패.
 ///
 pub struct PeekMut<'a, T, C: Comparator<T>> {
-    comp: &'a C,
-    source: &'a mut Vec<T>,
+    source: &'a mut MinHeap<T, C>,
 }
 
 // deref trait
@@ -149,7 +145,7 @@ where
 {
     type Target = T;
     fn deref(&self) -> &Self::Target {
-        &self.source[0]
+        &self.source.data[0]
     }
 }
 
@@ -159,7 +155,7 @@ where
     C: Comparator<T>,
 {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.source[0]
+        &mut self.source.data[0]
     }
 }
 
@@ -171,6 +167,6 @@ where
 {
     /// recover invariant of heap tree
     fn drop(&mut self) {
-        min_heapify(&mut self.source, self.comp, 0);
+        min_heapify(&mut self.source.data, &self.source.comparator, 0);
     }
 }
