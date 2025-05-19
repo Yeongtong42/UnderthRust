@@ -105,33 +105,19 @@ where
     }
 
     pub fn top(&self) -> Option<&T> {
-        if self.data.is_empty() {
-            return None;
-        }
-        Some(&self.data[0])
+        self.data.get(0)
     }
 }
 
-impl<T> FromIterator<T> for MinHeap<T, DefaultComparator>
+impl<T, C> FromIterator<T> for MinHeap<T, C>
 where
-    T: Ord,
+    C: Comparator<T> + Default,
 {
     fn from_iter<I>(iter: I) -> Self
     where
         I: IntoIterator<Item = T>,
     {
-        let into_iter = iter.into_iter();
-        let hint_cap = match into_iter.size_hint() {
-            (lbound, Some(ubound)) => {
-                (lbound + ubound) / 2 // median
-            }
-            (lbound, None) => lbound,
-        };
-        let mut result_buffer: Vec<T> = Vec::with_capacity(hint_cap);
-        for item in into_iter {
-            result_buffer.push(item);
-        }
-        MinHeap::<T, DefaultComparator>::from_vec(result_buffer, DefaultComparator)
+        MinHeap::<T, C>::from_vec(iter.into_iter().collect(), C::default())
     }
 }
 
