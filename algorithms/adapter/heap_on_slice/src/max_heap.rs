@@ -9,7 +9,7 @@ use super::*;
 ///
 /// # Methods
 /// heap property를 유지할 수 있도록 돕는 메서드 5개
-/// - `test_heap_property`: slice가 maxheap property를 만족하는지 확인한다.
+/// - `is_heap`: slice가 maxheap property를 만족하는지 확인한다.
 /// - `heapify`: 주어진 slice의 모든 원소가 heap property를 만족시키도록 변환한다.
 /// - `move_upward`: heap property를 만족하는 array에서 idx번째 원소의 값이 커진 경우 호출하는 메서드. heap property를 만족할 때까지 위로 이동시킨다.
 /// - `move_downward`: heap property를 만족하는 array에서 idx번째 원소의 값이 작아진 경우 호출하는 메서드. heap property를 만족할 때까지 아래로 이동시킨다.
@@ -32,10 +32,10 @@ use super::*;
 ///
 /// 이 과정에서 인자로 전달할 slice의 새로이 설정하기 위해 실제 메모리상의 위치를 reallocate해야 할 수 있다.
 pub trait MaxHeap<T>: Comparator<T> {
-    ///test_heap_property 메서드는 slice가 maxheap property를 만족하는지 확인한다.
-    fn test_heap_property(&self, arr: &[T]) -> bool {
+    ///is_heap 메서드는 slice가 maxheap property를 만족하는지 확인한다.
+    fn is_heap(&self, arr: &[T]) -> bool {
         let rev_comp = Reverse(self);
-        test_heap_property(&rev_comp, arr)
+        is_heap(&rev_comp, arr)
     }
 
     /// heapify 메서드는 slice의 모든 원소가 maxheap property를 만족하도록 위치를 조정한다.
@@ -104,44 +104,44 @@ mod unit_test {
         let comp = DefaultComparator;
         // initial array
         let mut arr = vec![5, 1, 8, 3, 2];
-        assert!(!comp.test_heap_property(&arr));
+        assert!(!comp.is_heap(&arr));
         comp.heapify(&mut arr);
-        assert!(comp.test_heap_property(&arr));
+        assert!(comp.is_heap(&arr));
         assert_eq!(arr[0], 8);
 
         // break leaf to be too large
         let len = arr.len();
         arr[len - 1] = 10;
-        assert!(!comp.test_heap_property(&arr));
+        assert!(!comp.is_heap(&arr));
         assert!(comp.move_upward(&mut arr, len - 1));
-        assert!(comp.test_heap_property(&arr));
+        assert!(comp.is_heap(&arr));
 
         // break root to be too small
         arr[0] = 0;
-        assert!(!comp.test_heap_property(&arr));
+        assert!(!comp.is_heap(&arr));
         assert!(comp.move_downward(&mut arr, 0));
-        assert!(comp.test_heap_property(&arr));
+        assert!(comp.is_heap(&arr));
 
         // heap_pushpop: small x (should pop old max)
         let mut arr2 = vec![4, 5, 6];
         comp.heapify(&mut arr2);
         let x = comp.heap_pushpop(&mut arr2, 3);
         assert_eq!(x, 6);
-        assert!(comp.test_heap_property(&arr2));
+        assert!(comp.is_heap(&arr2));
 
         // heap_pushpop: large x (returned without change)
         let mut arr3 = vec![4, 5, 6];
         comp.heapify(&mut arr3);
         let y = comp.heap_pushpop(&mut arr3, 7);
         assert_eq!(y, 7);
-        assert!(comp.test_heap_property(&arr3));
+        assert!(comp.is_heap(&arr3));
 
         // heap_pop: remove max element
         let mut arr4 = vec![2, 4, 6];
         comp.heapify(&mut arr4);
         if let Some(rest) = comp.heap_pop(&mut arr4) {
             assert_eq!(rest.len(), 2);
-            assert!(comp.test_heap_property(rest));
+            assert!(comp.is_heap(rest));
         } else {
             panic!("heap_pop returned None");
         }
@@ -159,13 +159,13 @@ mod unit_test {
         ];
         comp.heapify(&mut strs);
         assert_eq!(strs[0], "delta");
-        assert!(comp.test_heap_property(&strs));
+        assert!(comp.is_heap(&strs));
 
         // Vec<i32>: compare by lexicographic order
         let mut vecs = vec![vec![1], vec![3, 4], vec![2]];
         comp.heapify(&mut vecs);
         assert_eq!(vecs[0], vec![3, 4]);
-        assert!(comp.test_heap_property(&vecs));
+        assert!(comp.is_heap(&vecs));
     }
 
     // Custom comparator: AbstractDistance
@@ -194,7 +194,7 @@ mod unit_test {
         let comp = AbstractDistance { center: 3 };
         let mut arr = vec![1, 5, 3, 7, 2];
         comp.heapify(&mut arr);
-        assert!(comp.test_heap_property(&arr));
+        assert!(comp.is_heap(&arr));
         // root is farthest from center
         assert_eq!(arr[0], 7);
 

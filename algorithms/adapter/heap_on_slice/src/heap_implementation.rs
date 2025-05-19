@@ -10,7 +10,7 @@ use super::*;
 
 /// # Note
 /// [0, n/2)가 parent node이고 [n/2, n) 가 leaf node이므로 $[0, len / 2)$에 대해 확인한다.
-pub(crate) fn test_heap_property<T, C: Comparator<T>>(comp: &C, arr: &[T]) -> bool {
+pub(crate) fn is_heap<T, C: Comparator<T>>(comp: &C, arr: &[T]) -> bool {
     let len = arr.len();
     for idx in 0..len / 2 {
         let (left, right) = (2 * idx + 1, 2 * idx + 2);
@@ -215,19 +215,19 @@ mod unit_test {
     use crate::heap_implementation::*;
 
     #[test]
-    fn test_heap_property_true_and_false() {
+    fn is_heap_true_and_false() {
         let comp = DefaultComparator;
         // empty and single-element heaps
         let empty: Vec<i32> = vec![];
-        assert!(test_heap_property(&comp, &empty));
+        assert!(is_heap(&comp, &empty));
         let single = vec![1];
-        assert!(test_heap_property(&comp, &single));
+        assert!(is_heap(&comp, &single));
         // valid heap
         let heap = vec![1, 3, 2, 7, 5, 4];
-        assert!(test_heap_property(&comp, &heap));
+        assert!(is_heap(&comp, &heap));
         // invalid heap: parent greater than child
         let bad = vec![2, 1];
-        assert!(!test_heap_property(&comp, &bad));
+        assert!(!is_heap(&comp, &bad));
     }
 
     #[test]
@@ -235,23 +235,23 @@ mod unit_test {
         let comp = DefaultComparator;
         // Upward adjustment scenario
         let mut arr_up = vec![1, 3, 5, 7, 9];
-        assert!(test_heap_property(&comp, &arr_up));
+        assert!(is_heap(&comp, &arr_up));
         // break heap property by making a leaf too small
         arr_up[4] = 0;
-        assert!(!test_heap_property(&comp, &arr_up));
+        assert!(!is_heap(&comp, &arr_up));
         // fix upward
         assert!(move_upward(&comp, &mut arr_up, 4));
-        assert!(test_heap_property(&comp, &arr_up));
+        assert!(is_heap(&comp, &arr_up));
 
         // Downward adjustment scenario
         let mut arr_down = vec![2, 4, 6, 8, 10];
-        assert!(test_heap_property(&comp, &arr_down));
+        assert!(is_heap(&comp, &arr_down));
         // break heap property by making root too large
         arr_down[0] = 12;
-        assert!(!test_heap_property(&comp, &arr_down));
+        assert!(!is_heap(&comp, &arr_down));
         // fix downward
         assert!(move_downward(&comp, &mut arr_down, 0));
-        assert!(test_heap_property(&comp, &arr_down));
+        assert!(is_heap(&comp, &arr_down));
     }
 
     #[test]
@@ -259,7 +259,7 @@ mod unit_test {
         let comp = DefaultComparator;
         let mut arr = vec![3, 1, 4, 2, 5];
         heapify(&comp, &mut arr);
-        assert!(test_heap_property(&comp, &arr));
+        assert!(is_heap(&comp, &arr));
     }
 
     #[test]
@@ -269,18 +269,18 @@ mod unit_test {
         let mut arr = vec![1, 2, 3];
         let x = heap_pushpop(&comp, &mut arr, 0);
         assert_eq!(x, 0);
-        assert!(test_heap_property(&comp, &arr));
+        assert!(is_heap(&comp, &arr));
         // pushpop: large x
         let mut arr2 = vec![1, 2, 3];
         let y = heap_pushpop(&comp, &mut arr2, 5);
         assert_eq!(y, 1);
-        assert!(test_heap_property(&comp, &arr2));
+        assert!(is_heap(&comp, &arr2));
         // heap_pop
         let mut arr3 = vec![1, 3, 2];
         heapify(&comp, &mut arr3);
         if let Some(init) = heap_pop(&comp, &mut arr3) {
             assert_eq!(init.len(), 2);
-            assert!(test_heap_property(&comp, init));
+            assert!(is_heap(&comp, init));
         } else {
             panic!("heap_pop returned None on non-empty heap");
         }
@@ -291,19 +291,19 @@ mod unit_test {
         let comp = DefaultComparator;
         // upward adjustment
         let mut arr = vec![0, 4, 1, 5, 7, 3, 2, 8, 6, 9];
-        assert!(test_heap_property(&comp, &arr));
+        assert!(is_heap(&comp, &arr));
         // break heap property by changing arr[7] to 3
         arr[7] = 3;
-        assert!(!test_heap_property(&comp, &arr));
+        assert!(!is_heap(&comp, &arr));
         assert!(adjust_heap(&comp, &mut arr, 7));
-        assert!(test_heap_property(&comp, &arr));
+        assert!(is_heap(&comp, &arr));
         // downward adjustment
         let mut arr2 = vec![0, 4, 1, 5, 7, 3, 2, 8, 6, 9];
         // break heap property by changing arr[0] to 7
         arr2[0] = 7;
-        assert!(!test_heap_property(&comp, &arr2));
+        assert!(!is_heap(&comp, &arr2));
         assert!(adjust_heap(&comp, &mut arr2, 0));
-        assert!(test_heap_property(&comp, &arr2));
+        assert!(is_heap(&comp, &arr2));
     }
 
     #[test]
