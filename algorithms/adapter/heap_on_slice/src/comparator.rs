@@ -6,7 +6,7 @@
 /// `comp.cmp(a, b)`의 의미는 `std::cmp::Ord::cmp`와 동일하게 해석한다.
 /// Heap을 구성하는 과정에서 a, b가 부모자식 관계일 때 comp.cmp(a, b)의 결과가 std::cmp::Ordering::Less를 반환하는 경우,
 /// MinHeap의 경우 a가 b의 부모가 되고, MaxHeap의 경우 b가 a의 부모가 된다.
-pub trait Comparator<T>: Sized {
+pub trait Comparator<T> {
     fn cmp(&self, a: &T, b: &T) -> std::cmp::Ordering;
 }
 
@@ -45,9 +45,9 @@ impl<T: Ord> Comparator<T> for ReverseComparator {
 /// Reverse struct을 통해 MinHeap trait을 사용하는 것은 MaxHeap trait을 사용하는 것과 동등하다.
 #[repr(transparent)]
 #[derive(Debug, Copy, Clone)]
-pub struct Reverse<'c, C>(pub &'c C);
+pub struct Reverse<'c, C: ?Sized>(pub &'c C);
 
-impl<T, C: Comparator<T>> Comparator<T> for Reverse<'_, C> {
+impl<T, C: Comparator<T> + ?Sized> Comparator<T> for Reverse<'_, C> {
     fn cmp(&self, a: &T, b: &T) -> std::cmp::Ordering {
         self.0.cmp(b, a)
     }
@@ -89,5 +89,16 @@ mod unit_test {
         assert_eq!(comp2.cmp(&1, &2), Ordering::Less);
         assert_eq!(comp2.cmp(&2, &1), Ordering::Greater);
         assert_eq!(comp2.cmp(&3, &3), Ordering::Equal);
+    }
+
+    #[test]
+    fn test_unsized_comparator() {
+        // Use a trait object for Comparator<i32>
+        let comp: &dyn Comparator<i32> = &DefaultComparator;
+        // DefaultComparator should order 1 < 2
+        assert_eq!(comp.cmp(&1, &2), Ordering::Less);
+        // Wrap the trait object in Reverse to invert ordering
+        let rev = Reverse(comp);
+        assert_eq!(rev.cmp(&1, &2), Ordering::Greater);
     }
 }

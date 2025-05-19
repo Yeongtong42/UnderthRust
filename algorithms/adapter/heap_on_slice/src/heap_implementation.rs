@@ -10,7 +10,7 @@ use super::*;
 
 /// # Note
 /// [0, n/2)가 parent node이고 [n/2, n) 가 leaf node이므로 $[0, len / 2)$에 대해 확인한다.
-pub(crate) fn is_heap<T, C: Comparator<T>>(comp: &C, arr: &[T]) -> bool {
+pub(crate) fn is_heap<T, C: Comparator<T> + ?Sized>(comp: &C, arr: &[T]) -> bool {
     let len = arr.len();
     for idx in 0..len / 2 {
         let (left, right) = (2 * idx + 1, 2 * idx + 2);
@@ -38,7 +38,7 @@ pub(crate) fn is_heap<T, C: Comparator<T>>(comp: &C, arr: &[T]) -> bool {
 /// let parent = (*idx - 1) / 2;
 /// ```
 #[inline]
-fn single_upward<T, C: Comparator<T>>(comp: &C, arr: &mut [T], idx: &mut usize) -> bool {
+fn single_upward<T, C: Comparator<T> + ?Sized>(comp: &C, arr: &mut [T], idx: &mut usize) -> bool {
     use std::cmp::Ordering as O;
     let Some(parent) = idx.checked_sub(1).map(|x| x / 2) else {
         return false;
@@ -70,7 +70,7 @@ fn single_upward<T, C: Comparator<T>>(comp: &C, arr: &mut [T], idx: &mut usize) 
 /// }
 /// ```
 #[inline]
-fn single_downward<T, C: Comparator<T>>(comp: &C, arr: &mut [T], idx: &mut usize) -> bool {
+fn single_downward<T, C: Comparator<T> + ?Sized>(comp: &C, arr: &mut [T], idx: &mut usize) -> bool {
     let smallest_idx = {
         use std::cmp::Ordering as O;
         let (left, right) = (2 * *idx + 1, 2 * *idx + 2);
@@ -103,7 +103,11 @@ fn single_downward<T, C: Comparator<T>>(comp: &C, arr: &mut [T], idx: &mut usize
 /// }
 /// ```
 /// 형태였으나, 논리적으로 move_upward 함수의 반환값은 첫 single_upward호출의 반환과 같으므로 지금과 같이 변경됨
-pub(crate) fn move_upward<T, C: Comparator<T>>(comp: &C, arr: &mut [T], mut idx: usize) -> bool {
+pub(crate) fn move_upward<T, C: Comparator<T> + ?Sized>(
+    comp: &C,
+    arr: &mut [T],
+    mut idx: usize,
+) -> bool {
     if single_upward(comp, arr, &mut idx) {
         while single_upward(comp, arr, &mut idx) {}
         true
@@ -122,7 +126,11 @@ pub(crate) fn move_upward<T, C: Comparator<T>>(comp: &C, arr: &mut [T], mut idx:
 /// }
 /// ```
 /// 형태였으나, 논리적으로 move_downward 함수의 반환값은 첫 single_downward호출의 반환과 같으므로 지금과 같이 변경됨
-pub(crate) fn move_downward<T, C: Comparator<T>>(comp: &C, arr: &mut [T], mut idx: usize) -> bool {
+pub(crate) fn move_downward<T, C: Comparator<T> + ?Sized>(
+    comp: &C,
+    arr: &mut [T],
+    mut idx: usize,
+) -> bool {
     if single_downward(comp, arr, &mut idx) {
         while single_downward(comp, arr, &mut idx) {}
         true
@@ -139,7 +147,7 @@ pub(crate) fn move_downward<T, C: Comparator<T>>(comp: &C, arr: &mut [T], mut id
 /// $(k - 1) * 2 + 1 = n - 2$이고 $(k - 1) * 2 + 2 = n - 1$이므로 $k - 1$이 양쪽 자식만을 가지는 마지막 노드이다.
 /// 따라서 [0, n/2)가 parent node이고 [n/2, n) 가 leaf node이다
 /// $n = 0$인 경우에도 위 invariant가 성립한다.
-pub(crate) fn heapify<T, C: Comparator<T>>(comp: &C, arr: &mut [T]) {
+pub(crate) fn heapify<T, C: Comparator<T> + ?Sized>(comp: &C, arr: &mut [T]) {
     for idx in (0..arr.len() / 2).rev() {
         move_downward(comp, arr, idx);
     }
@@ -163,7 +171,7 @@ pub(crate) fn heapify<T, C: Comparator<T>>(comp: &C, arr: &mut [T]) {
 ///     move_downward(comp, arr, 0);
 /// }
 /// ```
-pub(crate) fn heap_pushpop<T, C: Comparator<T>>(comp: &C, arr: &mut [T], mut x: T) -> T {
+pub(crate) fn heap_pushpop<T, C: Comparator<T> + ?Sized>(comp: &C, arr: &mut [T], mut x: T) -> T {
     use std::cmp::Ordering as O;
     if arr.first().map(|y| comp.cmp(y, &x)) == Some(O::Less) {
         std::mem::swap(&mut arr[0], &mut x);
@@ -185,7 +193,7 @@ pub(crate) fn heap_pushpop<T, C: Comparator<T>>(comp: &C, arr: &mut [T], mut x: 
 /// }
 /// let (init, last) = arr.split_at_mut(len - 1);
 /// ```
-pub(crate) fn heap_pop<'arr, T, C: Comparator<T>>(
+pub(crate) fn heap_pop<'arr, T, C: Comparator<T> + ?Sized>(
     comp: &C,
     arr: &'arr mut [T],
 ) -> Option<&'arr mut [T]> {
@@ -198,14 +206,18 @@ pub(crate) fn heap_pop<'arr, T, C: Comparator<T>>(
     Some(init)
 }
 
-pub(crate) fn heap_reverse_sort<T, C: Comparator<T>>(comp: &C, mut arr: &mut [T]) {
+pub(crate) fn heap_reverse_sort<T, C: Comparator<T> + ?Sized>(comp: &C, mut arr: &mut [T]) {
     heapify(comp, arr);
     while let Some(shrinked) = heap_pop(comp, arr) {
         arr = shrinked;
     }
 }
 
-pub(crate) fn adjust_heap<T, C: Comparator<T>>(comp: &C, arr: &mut [T], idx: usize) -> bool {
+pub(crate) fn adjust_heap<T, C: Comparator<T> + ?Sized>(
+    comp: &C,
+    arr: &mut [T],
+    idx: usize,
+) -> bool {
     move_upward(comp, arr, idx) || move_downward(comp, arr, idx)
 }
 
