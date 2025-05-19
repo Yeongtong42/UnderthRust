@@ -16,14 +16,14 @@
 //!
 
 pub trait Comparator<T> {
-	fn compare(&self, a : &T, b : &T) -> std::cmp::Ordering;
+    fn compare(&self, a: &T, b: &T) -> std::cmp::Ordering;
 }
 
 #[derive(Default)]
 pub struct DefaultComparator;
-impl<T:Ord> Comparator<T> for DefaultComparator {
-	#[inline]
-	fn compare(&self, a: &T, b:&T) -> std::cmp::Ordering {
-		a.cmp(b)
-	}
+impl<T: Ord> Comparator<T> for DefaultComparator {
+    #[inline]
+    fn compare(&self, a: &T, b: &T) -> std::cmp::Ordering {
+        a.cmp(b)
+    }
 }
