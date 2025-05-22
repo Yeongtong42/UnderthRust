@@ -1,0 +1,13 @@
+[package]
+name = "sort"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+name = "sort"
+path = "./src/lib.rs"
+
+[dependencies]
+
+[dev-dependencies]
+rand = "0.9"
