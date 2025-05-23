@@ -72,6 +72,7 @@ pub fn merge_sort<T: Ord>(slice: &mut [T]) {
     }
 }
 
+/// comp must not panic or data in slice can be lost
 pub fn merge_sort_by<T, F>(slice: &mut [T], comp: F)
 where
     F: FnMut(&T, &T) -> std::cmp::Ordering,
@@ -138,9 +139,7 @@ where
 
         // write back ordered seg from cache
         unsafe {
-            for i in 0..merge_start_pos.min(len) {
-                copy_nonoverlapping(cache, &mut slice[0] as *mut T, merge_start_pos.min(len));
-            }
+            copy_nonoverlapping(cache, &mut slice[0] as *mut T, merge_start_pos.min(len));
         }
         seg_size = seg_size << 1;
     }
