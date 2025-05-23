@@ -1,7 +1,7 @@
 #![allow(unused)]
 
 use std::alloc::{Layout, alloc, dealloc};
-use std::ptr::{read, write};
+use std::ptr::{self, copy_nonoverlapping, read, write};
 
 pub fn merge_sort<T: Ord>(slice: &mut [T]) {
     // slice size check
@@ -62,9 +62,7 @@ pub fn merge_sort<T: Ord>(slice: &mut [T]) {
 
         // write back ordered seg from cache
         unsafe {
-            for i in 0..merge_start_pos.min(len) {
-                write(&mut slice[i] as *mut T, cache.add(i).read());
-            }
+            copy_nonoverlapping(cache, &mut slice[0] as *mut T, merge_start_pos.min(len));
         }
         seg_size = seg_size << 1;
     }
@@ -79,7 +77,7 @@ where
     F: FnMut(&T, &T) -> std::cmp::Ordering,
 {
     use std::cmp::Ordering as O;
-	let mut cmp = comp;
+    let mut cmp = comp;
 
     // slice size check
     let len = slice.len();
@@ -141,7 +139,7 @@ where
         // write back ordered seg from cache
         unsafe {
             for i in 0..merge_start_pos.min(len) {
-                write(&mut slice[i] as *mut T, cache.add(i).read());
+                copy_nonoverlapping(cache, &mut slice[0] as *mut T, merge_start_pos.min(len));
             }
         }
         seg_size = seg_size << 1;
