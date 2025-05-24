@@ -28,7 +28,7 @@ pub fn binary_quick_sort<T: Ord>(slice: &mut [T]) {
     binary_quick_sort(&mut slice[pivot_pos + 1..len]);
 }
 
-fn partition_by<T, F>(slice: &mut [T], comp: F) -> (usize, F)
+fn partition_by<T, F>(slice: &mut [T], comp: &mut F) -> usize
 where
     F: FnMut(&T, &T) -> std::cmp::Ordering,
 {
@@ -44,31 +44,31 @@ where
             cur_left_pos += 1;
         }
     }
-    (cur_left_pos - 1, cmp)
+    cur_left_pos - 1
 }
 
-fn quick_sort_by_comp<T, F>(slice: &mut [T], comp: F) -> F
+fn quick_sort_by_comp<T, F>(slice: &mut [T], comp: &mut F)
 where
     F: FnMut(&T, &T) -> std::cmp::Ordering,
 {
     let len = slice.len();
     if len <= 1 {
-        return comp;
+        return;
     }
 
     // partition
-    let (pivot_pos, comp) = partition_by(slice, comp);
+    let pivot_pos = partition_by(slice, comp);
 
     // recurse two part
-    let comp = quick_sort_by_comp(&mut slice[0..pivot_pos], comp);
+    quick_sort_by_comp(&mut slice[0..pivot_pos], comp);
     quick_sort_by_comp(&mut slice[pivot_pos + 1..len], comp)
 }
 
-pub fn binary_quick_sort_by<T, F>(slice: &mut [T], comp: F)
+pub fn binary_quick_sort_by<T, F>(slice: &mut [T], mut comp: F)
 where
     F: FnMut(&T, &T) -> std::cmp::Ordering,
 {
-    quick_sort_by_comp(slice, comp);
+    quick_sort_by_comp(slice, &mut comp);
 }
 
 #[cfg(test)]
