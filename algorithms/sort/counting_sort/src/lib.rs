@@ -6,12 +6,14 @@
 //! 이 모듈은 다음과 같은 trait을 제공합니다:
 //! - `CountingSort`: 기본 카운팅 정렬을 수행하는 trait. u8, u16, usize 타입과 같이, Into<usize>를 구현하는 타입에 대한 정렬을 지원합니다.
 //! - `TryCountingSort`: i8, i16, i32, i64, isize, u32, u64와 같이, TryInto<usize>를 구현하는 타입에 대한 정렬을 지원합니다.
-//! - `CountingSortByKey`: 키를 기준으로 정렬하는 trait. 키 함수를 인자로 받아 정렬을 수행합니다. 키 값을 계산해 정렬하는 데 사용됩니다.
-//! - `CountingSortByKeyUncached`: `CountingSortByKey`와 동일하지만, 각 요소에 대해 키를 두번씩 계산합니다. 따라서 키를 계산하는 비용이 키를 캐싱하는 벡터를 할당하는 비용보다 적을 때 사용할 수 있습니다.
+//! - `CountingSortByKey`: 키를 기준으로 정렬하는 trait. 키 함수를 인자로 받아 정렬을 수행합니다.
+//! - `CountingSortByKeyCached`: `CountingSortByKey`와 동일하지만, 각 요소에 대해 키를 한번씩 계산합니다. 키 값을 계산해 캐싱한 후 정렬하는 데 사용됩니다.
+//!
+//! 네 trait은 모두 `&mut [T]`에 autoimplement하는 것을 목적으로 정의되었으며, 사용자가 타 타입에 별도로 implement하는 것을 상정하지 않습니다.
 //!
 //! # Clone trait
 //! `CountingSort`와 `TryCountingSort`는 clone이 cheap한 Numeric 타입을 상정하고 디자인 되어 있습니다.
-//! `CountingSortByKey`와 `CountingSortByKeyUncached`는 Clone을 implement하지 않은 타입에 대해서도 사용될 수 있도록 swap을 사용하여 구현되었습니다.
+//! `CountingSortByKey`와 `CountingSortByKeyCached`는 Clone을 implement하지 않은 타입에 대해서도 사용될 수 있도록 swap을 사용하여 구현되었습니다.
 //!
 //! # 사용법
 //! 각 trait은 단일 메서드를 제공합니다. 다음은 counting sort를 사용하는 예시입니다:
@@ -35,7 +37,7 @@
 //! assert!(arr2.try_counting_sort().is_err());
 //! assert_eq!(arr2, [4, 2, -2, 8, 3, -3, 1]); // No side effect
 //! ```
-//! `CountingSortByKey` trait을 사용하여, 키를 기준으로 정렬할 수 있습니다. 이 trait은 `Fn(&Self) -> usize` 타입의 함수를 인자로 받을 수 있습니다.
+//! `CountingSortByKey` trait을 사용하여, 키를 기준으로 정렬할 수 있습니다. 이 trait은 예시와 같이 `Fn(&Self) -> usize` 타입의 함수를 인자로 받을 수 있습니다.
 //! ```
 //! use counting_sort::CountingSortByKey;
 //!
@@ -68,65 +70,92 @@
 //!
 //! assert_eq!(strings, answer);
 //! ```
-//! `CountingSortByKeyUncached` trait을 사용하여, 키를 기준으로 정렬할 수 있습니다. 이 trait은 key를 계산하는 비용이 캐싱하는 비용보다 적을 때 사용할 수 있습니다.
+//! `CountingSortByKeyCached` trait을 사용하여, 키를 기준으로 정렬할 수 있습니다. 이 예제에서는 문자열에서 모음의 수를 키로 사용하며, 이는 단순 길이 계산보다 비용이 더 많이 드는 키 계산을 시뮬레이션합니다.
 //! ```
-//! use counting_sort::CountingSortByKeyUncached;
+//! use counting_sort::CountingSortByKeyCached;
 //!
-//! let mut strings = vec![
-//!     "counting".to_string(),
-//!     "hello".to_string(),
-//!     "sort____".to_string(),
-//!     "a".to_string(),
-//!     "world".to_string(),
-//!     "is______".to_string(),
-//!     "rust".to_string(),
-//!     "bb".to_string(),
-//!     "stable__".to_string(),
-//!     "ccc".to_string(),
+//! #[derive(Debug, Clone, PartialEq, Eq)] // assert_eq를 위해 Eq 추가
+//! struct Word {
+//!     text: String,
+//! }
+//! impl Word {
+//!     fn new(text: &str) -> Self { Word { text: text.to_string() } }
+//!     // 단순 길이 계산보다 더 복잡한 키 계산을 시뮬레이션합니다.
+//!     fn vowel_count(&self) -> usize {
+//!         self.text.to_lowercase().chars().filter(|&c| "aeiou".contains(c)).count()
+//!     }
+//! }
+//!
+//! let mut items = vec![
+//!     Word::new("counting"), // 모음: o, u, i => 3
+//!     Word::new("hello"),    // 모음: e, o => 2
+//!     Word::new("sort"),     // 모음: o => 1
+//!     Word::new("a"),        // 모음: a => 1
+//!     Word::new("world"),    // 모음: o => 1
+//!     Word::new("is"),       // 모음: i => 1
+//!     Word::new("rust"),     // 모음: u => 1
+//!     Word::new("bb"),       // 모음: 0
+//!     Word::new("stable"),   // 모음: a, e => 2
+//!     Word::new("ccc"),      // 모음: 0
 //! ];
 //! let answer = vec![
-//!     "a".to_string(),
-//!     "bb".to_string(),
-//!     "ccc".to_string(),
-//!     "rust".to_string(),
-//!     "hello".to_string(),
-//!     "world".to_string(),
-//!     "counting".to_string(),
-//!     "sort____".to_string(),
-//!     "is______".to_string(),
-//!     "stable__".to_string(),
+//!     Word::new("bb"),
+//!     Word::new("ccc"),
+//!     Word::new("sort"),
+//!     Word::new("a"),
+//!     Word::new("world"),
+//!     Word::new("is"),
+//!     Word::new("rust"),
+//!     Word::new("hello"),
+//!     Word::new("stable"),
+//!     Word::new("counting"),
 //! ];
 //!
-//! strings.counting_sort_by_key_uncached(|s| s.len());
+//! items.counting_sort_by_key_cached(|item| item.vowel_count());
 //!
-//! assert_eq!(strings, answer);
+//! assert_eq!(items, answer);
 //! ```
+//!
+//! # Panics
+//! 각 함수는 다음과 같은 상황에서 패닉을 발생시킬 수 있습니다:
+//! -
 
-/// Into<usize>와 Clone을 implement하는 타입에 대해 autoimplement됩니다.
+/// Into<usize>와 Clone을 implement하는 Sized 타입 T에 대해 &mut [T]에 autoimplement됩니다.
 /// counting_sort는 Failure가 발생하지 않으며, 반환이 없습니다.
 /// u8, u16, usize 와 같은 타입에 대해 사용됩니다.
-pub trait CountingSort: Sized {
+pub trait CountingSort {
     fn counting_sort(self);
 }
 
-/// TryInto<usize>와 Clone을 implement하는 타입에 대해 autoimplement됩니다.
-pub trait TryCountingSort: Sized {
+/// TryInto<usize>와 Clone을 implement하는 Sized 타입 T에 대해 &mut [T]에 autoimplement됩니다.
+/// try_counting_sort는 Failure가 발생할 수 있으며, 반환은 성공시 Ok(())를 반환하고, 실패시 Err를 반환합니다.
+/// i8, i16, i32, i64, isize, u32, u64와 같은 타입에 대해 사용됩니다.
+/// 정수형의 형변환의 일반적인 Error는 `std::num::TryFromIntError`임을 참고하십시오.
+pub trait TryCountingSort {
     type TryIntoError;
     fn try_counting_sort(self) -> Result<(), Self::TryIntoError>;
 }
 
-pub trait CountingSortByKey: Sized {
-    type IsArrayOf;
+/// CountingSortByKey trait은 Sized 타입 T에 대해서 &mut [T]에 autoimplement됩니다.
+/// 이 trait은 key_fn을 인자로 받아, key_fn을 통해 계산된 키를 기준으로 정렬합니다.
+/// key_fn은 Fn(&Self::IsArrayOf) -> usize 타입의 함수를 인자로 받습니다.
+/// 이 trait은 각 요소에 대해 키를 두번씩 계산합니다.
+/// 따라서 키를 계산하는 비용이 키를 캐싱하는 비용보다 적을 때 사용할 수 있습니다.
+pub trait CountingSortByKey<T> {
     fn counting_sort_by_key<F>(self, key_fn: F)
     where
-        F: Fn(&Self::IsArrayOf) -> usize;
+        F: Fn(&T) -> usize;
 }
 
-pub trait CountingSortByKeyUncached: Sized {
-    type IsArrayOf;
-    fn counting_sort_by_key_uncached<F>(self, key_fn: F)
+/// CountingSortByKeyCached trait은 Sized 타입 T에 대해서 &mut [T]에 autoimplement됩니다.
+/// 이 trait은 key_fn을 인자로 받아, key_fn을 통해 계산된 키를 기준으로 정렬합니다.
+/// key_fn은 Fn(&Self::IsArrayOf) -> usize 타입의 함수를 인자로 받습니다.
+/// 이 trait은 다른 3개의 trait과 달리, key를 한번 계산한 후, 그 값을 캐싱하여 사용합니다.
+/// 따라서 key를 계산하는 비용이 캐싱하는 비용보다 클 때 사용할 수 있습니다.
+pub trait CountingSortByKeyCached<T> {
+    fn counting_sort_by_key_cached<F>(self, key_fn: F)
     where
-        F: Fn(&Self::IsArrayOf) -> usize;
+        F: Fn(&T) -> usize;
 }
 
 impl<T> CountingSort for &mut [T]
@@ -134,27 +163,30 @@ where
     T: Into<usize> + Copy,
 {
     fn counting_sort(self) {
-        let mut counter = Vec::new();
+        if self.len() <= 1 {
+            return;
+        }
+        let mut counter: Vec<usize> = Vec::new();
         let mut max_key = 0;
 
         for item in self.iter() {
             let key = (*item).into();
             if counter.len() <= key {
-                counter.resize((key + 1).next_power_of_two(), 0);
+                counter.resize(key.checked_add(1).unwrap().next_power_of_two(), 0);
             }
-            counter[key] += 1;
+            counter[key] = counter[key].checked_add(1).unwrap();
             max_key = max_key.max(key);
         }
 
         for i in 1..=max_key {
-            counter[i] += counter[i - 1];
+            counter[i] = counter[i].checked_add(counter[i - 1]).unwrap();
         }
 
         let mut perm = vec![0; self.len()];
         for (idx, item) in self.iter().enumerate().rev() {
             let key = (*item).into();
-            perm[idx] = counter[key] - 1;
             counter[key] -= 1;
+            perm[idx] = counter[key];
         }
 
         let cloned_self = self.to_vec();
@@ -170,27 +202,30 @@ where
 {
     type TryIntoError = <T as TryInto<usize>>::Error;
     fn try_counting_sort(self) -> Result<(), Self::TryIntoError> {
-        let mut counter = Vec::new();
+        if self.len() <= 1 {
+            return Ok(());
+        }
+        let mut counter: Vec<usize> = Vec::new();
         let mut max_key = 0;
 
         for item in self.iter() {
             let key = (*item).try_into()?;
             if counter.len() <= key {
-                counter.resize((key + 1).next_power_of_two(), 0);
+                counter.resize(key.checked_add(1).unwrap().next_power_of_two(), 0);
             }
-            counter[key] += 1;
+            counter[key] = counter[key].checked_add(1).unwrap();
             max_key = max_key.max(key);
         }
 
         for i in 1..=max_key {
-            counter[i] += counter[i - 1];
+            counter[i] = counter[i].checked_add(counter[i - 1]).unwrap();
         }
 
         let mut perm = vec![0; self.len()];
         for (idx, item) in self.iter().enumerate().rev() {
             let key = (*item).try_into()?;
-            perm[idx] = counter[key] - 1;
             counter[key] -= 1;
+            perm[idx] = counter[key];
         }
 
         let cloned_self = self.to_vec();
@@ -202,34 +237,35 @@ where
     }
 }
 
-impl<T> CountingSortByKey for &mut [T] {
-    type IsArrayOf = T;
+impl<T> CountingSortByKey<T> for &mut [T] {
     fn counting_sort_by_key<F>(self, key_fn: F)
     where
         F: Fn(&T) -> usize,
     {
-        let mut counter = Vec::new();
+        if self.len() <= 1 {
+            return;
+        }
+        let mut counter: Vec<usize> = Vec::new();
         let mut max_key = 0;
-        let mut keys = Vec::with_capacity(self.len());
+
         for item in self.iter() {
             let key = key_fn(item);
-            keys.push(key);
             if counter.len() <= key {
-                counter.resize((key + 1).next_power_of_two(), 0);
+                counter.resize(key.checked_add(1).unwrap().next_power_of_two(), 0);
             }
-            counter[key] += 1;
+            counter[key] = counter[key].checked_add(1).unwrap();
             max_key = max_key.max(key);
         }
+
         for i in 1..=max_key {
-            counter[i] += counter[i - 1];
+            counter[i] = counter[i].checked_add(counter[i - 1]).unwrap();
         }
 
         let mut perm = vec![0; self.len()];
-
-        for idx in (0..self.len()).rev() {
-            let key = keys[idx];
-            perm[idx] = counter[key] - 1;
+        for (idx, item) in self.iter().enumerate().rev() {
+            let key = key_fn(item);
             counter[key] -= 1;
+            perm[idx] = counter[key];
         }
 
         for i in 0..self.len() {
@@ -242,33 +278,36 @@ impl<T> CountingSortByKey for &mut [T] {
     }
 }
 
-impl<T> CountingSortByKeyUncached for &mut [T] {
-    type IsArrayOf = T;
-    fn counting_sort_by_key_uncached<F>(self, key_fn: F)
+impl<T> CountingSortByKeyCached<T> for &mut [T] {
+    fn counting_sort_by_key_cached<F>(self, key_fn: F)
     where
         F: Fn(&T) -> usize,
     {
-        let mut counter = Vec::new();
+        if self.len() <= 1 {
+            return;
+        }
+        let mut counter: Vec<usize> = Vec::new();
         let mut max_key = 0;
-
+        let mut keys = Vec::with_capacity(self.len());
         for item in self.iter() {
             let key = key_fn(item);
+            keys.push(key);
             if counter.len() <= key {
-                counter.resize((key + 1).next_power_of_two(), 0);
+                counter.resize(key.checked_add(1).unwrap().next_power_of_two(), 0);
             }
-            counter[key] += 1;
+            counter[key] = counter[key].checked_add(1).unwrap();
             max_key = max_key.max(key);
         }
-
         for i in 1..=max_key {
-            counter[i] += counter[i - 1];
+            counter[i] = counter[i].checked_add(counter[i - 1]).unwrap();
         }
 
         let mut perm = vec![0; self.len()];
-        for (idx, item) in self.iter().enumerate().rev() {
-            let key = key_fn(item);
-            perm[idx] = counter[key] - 1;
+
+        for idx in (0..self.len()).rev() {
+            let key = keys[idx];
             counter[key] -= 1;
+            perm[idx] = counter[key];
         }
 
         for i in 0..self.len() {
@@ -303,6 +342,55 @@ mod tests {
         assert_eq!(arr2, [4, -2, -8]);
     }
 
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    struct Word {
+        text: String,
+    }
+    impl Word {
+        fn new(text: &str) -> Self {
+            Word {
+                text: text.to_string(),
+            }
+        }
+        fn vowel_count(&self) -> usize {
+            self.text
+                .to_lowercase()
+                .chars()
+                .filter(|&c| "aeiou".contains(c))
+                .count()
+        }
+    }
+
+    #[test]
+    fn test_counting_sort_by_key_cached() {
+        let mut items = vec![
+            Word::new("counting"),
+            Word::new("hello"),
+            Word::new("sort"),
+            Word::new("a"),
+            Word::new("world"),
+            Word::new("is"),
+            Word::new("rust"),
+            Word::new("bb"),
+            Word::new("stable"),
+            Word::new("ccc"),
+        ];
+        let answer = vec![
+            Word::new("bb"),
+            Word::new("ccc"),
+            Word::new("sort"),
+            Word::new("a"),
+            Word::new("world"),
+            Word::new("is"),
+            Word::new("rust"),
+            Word::new("hello"),
+            Word::new("stable"),
+            Word::new("counting"),
+        ];
+        items.counting_sort_by_key_cached(|item| item.vowel_count());
+        assert_eq!(items, answer);
+    }
+
     #[test]
     fn test_counting_sort_by_key() {
         let mut strings = vec![
@@ -333,33 +421,221 @@ mod tests {
         assert_eq!(strings, answer);
     }
 
+    // 빈 배열 테스트
     #[test]
-    fn test_counting_sort_by_key_uncached() {
-        let mut strings = vec![
-            "counting".to_string(),
-            "hello".to_string(),
-            "sort____".to_string(),
-            "a".to_string(),
-            "world".to_string(),
-            "is______".to_string(),
-            "rust".to_string(),
-            "bb".to_string(),
-            "stable__".to_string(),
-            "ccc".to_string(),
+    fn test_empty_array_counting_sort() {
+        let mut arr: [usize; 0] = [];
+        arr.counting_sort();
+        assert_eq!(arr, <[usize; 0]>::default());
+    }
+
+    #[test]
+    fn test_empty_array_try_counting_sort() {
+        let mut arr: [i32; 0] = [];
+        assert!(arr.try_counting_sort().is_ok());
+        assert_eq!(arr, <[i32; 0]>::default());
+    }
+
+    #[test]
+    fn test_empty_array_counting_sort_by_key() {
+        let mut arr: [String; 0] = [];
+        arr.counting_sort_by_key(|s| s.len());
+        assert_eq!(arr, <[String; 0]>::default()); // 빈 벡터는 그대로 유지
+    }
+
+    #[test]
+    fn test_empty_array_counting_sort_by_key_cached() {
+        let mut arr: [String; 0] = [];
+        arr.counting_sort_by_key_cached(|s| s.len());
+        assert_eq!(arr, <[String; 0]>::default()); // 빈 벡터는 그대로 유지
+    }
+
+    // 모든 요소가 동일한 경우 테스트 (안정성 간접 확인)
+    #[test]
+    fn test_all_elements_same_key_counting_sort() {
+        let mut arr = [1usize, 1, 1, 1];
+        arr.counting_sort();
+        assert_eq!(arr, [1, 1, 1, 1]);
+    }
+
+    #[test]
+    fn test_all_elements_same_key_try_counting_sort() {
+        let mut arr = [5i32, 5, 5];
+        assert!(arr.try_counting_sort().is_ok());
+        assert_eq!(arr, [5, 5, 5]);
+    }
+
+    #[test]
+    fn test_all_elements_same_key_counting_sort_by_key() {
+        // 안정성: 모든 키가 같을 때 원래 순서가 유지되어야 함
+        let mut arr = vec![
+            Word::new("apple"),
+            Word::new("apricot"),
+            Word::new("banana"),
         ];
-        let answer = vec![
-            "a".to_string(),
-            "bb".to_string(),
-            "ccc".to_string(),
-            "rust".to_string(),
-            "hello".to_string(),
-            "world".to_string(),
-            "counting".to_string(),
-            "sort____".to_string(),
-            "is______".to_string(),
-            "stable__".to_string(),
-        ];
-        strings.counting_sort_by_key_uncached(|s| s.len());
-        assert_eq!(strings, answer);
+        let expected = arr.clone(); // 원래 순서
+        arr.counting_sort_by_key(|_w| 0); // 모든 키를 0으로 설정
+        assert_eq!(
+            arr, expected,
+            "Order should be preserved for same keys (stability)"
+        );
+    }
+
+    #[test]
+    fn test_all_elements_same_key_counting_sort_by_key_cached() {
+        let mut arr = vec![Word::new("zebra"), Word::new("yak"), Word::new("xylophone")];
+        let expected = arr.clone();
+        arr.counting_sort_by_key_cached(|_w| 10); // 모든 키를 10으로 설정
+        assert_eq!(
+            arr, expected,
+            "Order should be preserved for same keys (stability)"
+        );
+    }
+
+    // 이미 정렬된 배열 테스트
+    #[test]
+    fn test_already_sorted_counting_sort() {
+        let mut arr = [1usize, 2, 3, 4];
+        arr.counting_sort();
+        assert_eq!(arr, [1, 2, 3, 4]);
+    }
+
+    #[test]
+    fn test_already_sorted_try_counting_sort() {
+        let mut arr = [10i32, 20, 30];
+        assert!(arr.try_counting_sort().is_ok());
+        assert_eq!(arr, [10, 20, 30]);
+    }
+
+    #[test]
+    fn test_already_sorted_counting_sort_by_key() {
+        let mut arr = vec!["a".to_string(), "bb".to_string(), "ccc".to_string()];
+        let expected = arr.clone();
+        arr.counting_sort_by_key(|s| s.len());
+        assert_eq!(arr, expected);
+    }
+
+    #[test]
+    fn test_already_sorted_counting_sort_by_key_cached() {
+        let mut arr = vec![Word::new("a"), Word::new("b"), Word::new("c")];
+        let expected = arr.clone();
+        arr.counting_sort_by_key_cached(|w| w.text.chars().next().unwrap() as usize); // 첫 글자 ASCII 값
+        assert_eq!(arr, expected);
+    }
+
+    // 역순으로 정렬된 배열 테스트
+    #[test]
+    fn test_reverse_sorted_counting_sort() {
+        let mut arr = [4usize, 3, 2, 1];
+        arr.counting_sort();
+        assert_eq!(arr, [1, 2, 3, 4]);
+    }
+
+    #[test]
+    fn test_reverse_sorted_try_counting_sort() {
+        let mut arr = [30i32, 20, 10];
+        assert!(arr.try_counting_sort().is_ok());
+        assert_eq!(arr, [10, 20, 30]);
+    }
+
+    #[test]
+    fn test_reverse_sorted_counting_sort_by_key() {
+        let mut arr = vec!["ccc".to_string(), "bb".to_string(), "a".to_string()];
+        arr.counting_sort_by_key(|s| s.len());
+        assert_eq!(
+            arr,
+            vec!["a".to_string(), "bb".to_string(), "ccc".to_string()]
+        );
+    }
+
+    #[test]
+    fn test_reverse_sorted_counting_sort_by_key_cached() {
+        let mut arr = vec![Word::new("c"), Word::new("b"), Word::new("a")];
+        arr.counting_sort_by_key_cached(|w| w.text.chars().next().unwrap() as usize);
+        assert_eq!(arr, vec![Word::new("a"), Word::new("b"), Word::new("c")]);
+    }
+
+    // usize::MAX 키 값 패닉 테스트
+    #[test]
+    #[should_panic]
+    fn test_counting_sort_with_usize_max_panics() {
+        let mut arr = [0usize, usize::MAX];
+        arr.counting_sort();
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_try_counting_sort_with_usize_max_panics() {
+        // T가 usize일 때, try_into()는 성공하고 그 후 key == usize::MAX 체크에서 패닉해야 함
+        let mut arr_usize: [usize; 2] = [0, usize::MAX];
+        // unwrap_or_else로 try_into 자체의 에러가 아님을 명확히 함
+        arr_usize
+            .try_counting_sort()
+            .unwrap_or_else(|e| panic!("try_into failed unexpectedly for usize input: {:?}", e));
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_counting_sort_by_key_with_usize_max_key_panics() {
+        let mut arr = [0, 1]; // i32 타입 사용
+        arr.counting_sort_by_key(|x: &i32| if *x == 1 { usize::MAX } else { 0 });
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_counting_sort_by_key_cached_with_usize_max_key_panics() {
+        let mut arr = [0, 1]; // i32 타입 사용
+        arr.counting_sort_by_key_cached(|x: &i32| if *x == 1 { usize::MAX } else { 0 });
+    }
+
+    // TryInto<usize> 변환 실패 테스트 (TryFromIntError)
+    #[test]
+    fn test_try_counting_sort_conversion_failure_u64_if_usize_is_smaller() {
+        // 이 테스트는 usize가 u64보다 작을 때 (예: 32비트 대상) 의미가 있음
+        if usize::BITS < 64 {
+            let large_val_beyond_usize_max = (usize::MAX as u64) + 1;
+            let mut arr: [u64; 2] = [0, large_val_beyond_usize_max];
+            assert!(
+                arr.try_counting_sort().is_err(),
+                "Should fail to convert large_val_beyond_usize_max to usize"
+            );
+            assert_eq!(
+                arr,
+                [0, large_val_beyond_usize_max],
+                "Array should be unchanged on conversion error"
+            );
+        } else {
+            // usize가 64비트인 경우, u64::MAX를 usize로 변환 시도 (usize::MAX와 같다면 성공, 아니면 실패)
+            // 여기서는 usize::MAX + 1 개념이 u64 범위 내에서만 의미 있으므로,
+            // usize가 64비트일 때는 이 특정 테스트 케이스는 스킵하거나 다르게 접근해야 함.
+            // 지금은 usize < u64 경우만 명확히 테스트.
+            println!(
+                "Skipping test_try_counting_sort_conversion_failure_u64_if_usize_is_smaller as usize is likely 64-bit."
+            );
+        }
+    }
+    #[test]
+    fn test_try_counting_sort_negative_value_fails_conversion() {
+        let mut arr_i8: [i8; 2] = [5, -1];
+        assert!(
+            arr_i8.try_counting_sort().is_err(),
+            "Should fail for negative i8 value"
+        );
+        assert_eq!(
+            arr_i8,
+            [5, -1],
+            "Array should be unchanged on negative i8 error"
+        );
+
+        let mut arr_i64: [i64; 2] = [100, -100];
+        assert!(
+            arr_i64.try_counting_sort().is_err(),
+            "Should fail for negative i64 value"
+        );
+        assert_eq!(
+            arr_i64,
+            [100, -100],
+            "Array should be unchanged on negative i64 error"
+        );
     }
 }
