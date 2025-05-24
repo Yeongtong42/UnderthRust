@@ -12,12 +12,12 @@ pub fn merge_sort<T: Ord>(slice: &mut [T]) {
     }
 
     // buffer allocation
-    let mut cache = 0 as *mut T;
+    let mut merge_buffer = 0 as *mut T;
     let layout = Layout::array::<T>(len).unwrap();
     unsafe {
-        cache = alloc(layout) as *mut T;
+        merge_buffer = alloc(layout) as *mut T;
     }
-    if cache.is_null() {
+    if merge_buffer.is_null() {
         // allocation failed
         panic!();
     }
@@ -54,7 +54,7 @@ pub fn merge_sort<T: Ord>(slice: &mut [T]) {
                             tmp
                         }
                     };
-                    write(cache.add(i), next_val);
+                    write(merge_buffer.add(i), next_val);
                 }
             }
             merge_start_pos += (seg_size << 1);
@@ -62,13 +62,13 @@ pub fn merge_sort<T: Ord>(slice: &mut [T]) {
 
         // write back ordered seg from cache
         unsafe {
-            copy_nonoverlapping(cache, &mut slice[0] as *mut T, merge_start_pos.min(len));
+            copy_nonoverlapping(merge_buffer, &mut slice[0] as *mut T, merge_start_pos.min(len));
         }
         seg_size = seg_size << 1;
     }
 
     unsafe {
-        dealloc(cache as *mut u8, layout);
+        dealloc(merge_buffer as *mut u8, layout);
     }
 }
 
@@ -88,12 +88,12 @@ where
     }
 
     // buffer allocation
-    let mut cache = 0 as *mut T;
+    let mut merge_buffer = 0 as *mut T;
     let layout = Layout::array::<T>(len).unwrap();
     unsafe {
-        cache = alloc(layout) as *mut T;
+        merge_buffer = alloc(layout) as *mut T;
     }
-    if cache.is_null() {
+    if merge_buffer.is_null() {
         // allocation failed
         panic!();
     }
@@ -131,7 +131,7 @@ where
                                 tmp
                             }
                         };
-                    write(cache.add(i), next_val);
+                    write(merge_buffer.add(i), next_val);
                 }
             }
             merge_start_pos += (seg_size << 1);
@@ -139,13 +139,13 @@ where
 
         // write back ordered seg from cache
         unsafe {
-            copy_nonoverlapping(cache, &mut slice[0] as *mut T, merge_start_pos.min(len));
+            copy_nonoverlapping(merge_buffer, &mut slice[0] as *mut T, merge_start_pos.min(len));
         }
         seg_size = seg_size << 1;
     }
 
     unsafe {
-        dealloc(cache as *mut u8, layout);
+        dealloc(merge_buffer as *mut u8, layout);
     }
 }
 
