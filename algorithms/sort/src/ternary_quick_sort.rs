@@ -118,4 +118,44 @@ where
 }
 
 #[cfg(test)]
-mod tests {}
+mod tests {
+
+    use rand::distr::StandardUniform;
+    use rand::rngs::StdRng;
+    use rand::{Rng, SeedableRng};
+
+    use crate::ternary_quick_sort::ternary_partition;
+
+    fn is_partitioned(slice: &[i32], pivot_pos: (usize, usize)) -> bool {
+        let len = slice.len();
+
+        for i in 0..pivot_pos.0 {
+            if !(slice[i] <= slice[pivot_pos.0 - 1]) {
+                return false;
+            }
+        }
+        for i in (pivot_pos.0 + 1)..pivot_pos.1 {
+            if !(slice[pivot_pos.0 - 1] < slice[i] && slice[i] < slice[pivot_pos.1]) {
+                return false;
+            }
+        }
+        for i in pivot_pos.1..len {
+            if !(slice[pivot_pos.1] <= slice[i]) {
+                return false;
+            }
+        }
+        true
+    }
+
+    #[test]
+    fn test_partition() {
+        let seed: u64 = 42;
+        let rng = StdRng::seed_from_u64(seed);
+
+        let mut vec: Vec<i32> = rng.sample_iter(StandardUniform).take(100).collect();
+
+        let pivot_pos = ternary_partition(&mut vec);
+
+        assert!(is_partitioned(&vec, pivot_pos));
+    }
+}
