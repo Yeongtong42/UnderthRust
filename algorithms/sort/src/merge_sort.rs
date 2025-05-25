@@ -3,6 +3,9 @@
 use std::alloc::{Layout, alloc, dealloc};
 use std::ptr::{self, copy_nonoverlapping, read, write};
 
+/// non-recursive merge sort
+/// use pointer instead of ref during merging
+/// this function is safe because it restore all of data at once
 pub fn merge_sort<T: Ord>(slice: &mut [T]) {
     // slice size check
     let len = slice.len();
@@ -62,7 +65,11 @@ pub fn merge_sort<T: Ord>(slice: &mut [T]) {
 
         // write back ordered seg from cache
         unsafe {
-            copy_nonoverlapping(merge_buffer, &mut slice[0] as *mut T, merge_start_pos.min(len));
+            copy_nonoverlapping(
+                merge_buffer,
+                &mut slice[0] as *mut T,
+                merge_start_pos.min(len),
+            );
         }
         seg_size = seg_size << 1;
     }
@@ -72,7 +79,9 @@ pub fn merge_sort<T: Ord>(slice: &mut [T]) {
     }
 }
 
-/// comp must not panic or data in slice can be lost
+/// non-recursive merge sort by comp
+/// use pointer instead of ref during merging
+/// this function is safe because it restore all of data at once
 pub fn merge_sort_by<T, F>(slice: &mut [T], comp: F)
 where
     F: FnMut(&T, &T) -> std::cmp::Ordering,
@@ -139,7 +148,11 @@ where
 
         // write back ordered seg from cache
         unsafe {
-            copy_nonoverlapping(merge_buffer, &mut slice[0] as *mut T, merge_start_pos.min(len));
+            copy_nonoverlapping(
+                merge_buffer,
+                &mut slice[0] as *mut T,
+                merge_start_pos.min(len),
+            );
         }
         seg_size = seg_size << 1;
     }

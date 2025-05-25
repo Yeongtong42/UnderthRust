@@ -1,5 +1,6 @@
 #![allow(unused)]
 
+/// partition slice with pivot at index 0
 fn partition<T: Ord>(slice: &mut [T]) -> usize {
     let len = slice.len();
     let pivot = len - 1;
@@ -14,6 +15,7 @@ fn partition<T: Ord>(slice: &mut [T]) -> usize {
     cur_left_pos - 1
 }
 
+/// sort slice with basic quick-sort algorithm
 pub fn binary_quick_sort<T: Ord>(slice: &mut [T]) {
     let len = slice.len();
     if len <= 1 {
@@ -28,6 +30,7 @@ pub fn binary_quick_sort<T: Ord>(slice: &mut [T]) {
     binary_quick_sort(&mut slice[pivot_pos + 1..len]);
 }
 
+/// partition slice with pivot at index 0 by comp
 fn partition_by<T, F>(slice: &mut [T], comp: &mut F) -> usize
 where
     F: FnMut(&T, &T) -> std::cmp::Ordering,
@@ -64,6 +67,7 @@ where
     quick_sort_by_comp(&mut slice[pivot_pos + 1..len], comp)
 }
 
+/// sort slice with basic quick-sort algorithm
 pub fn binary_quick_sort_by<T, F>(slice: &mut [T], comp: F)
 where
     F: FnMut(&T, &T) -> std::cmp::Ordering,

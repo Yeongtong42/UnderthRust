@@ -1,5 +1,8 @@
 #![allow(unused)]
 
+/// partition slice in 3 part and return it's delimeter
+/// based on Dijkstra's Dutch national flag algorithm
+/// two pivot's are at front and back
 fn ternary_partition<T: Ord>(slice: &mut [T]) -> (usize, usize) {
     use std::cmp::Ordering as O;
     let end = slice.len() - 1;
@@ -34,6 +37,8 @@ fn ternary_partition<T: Ord>(slice: &mut [T]) -> (usize, usize) {
     (i, j)
 }
 
+/// sort slice with 3-way partition quick-sort algorithm
+/// use Ord trait for sorting
 pub fn ternary_quick_sort<T: Ord>(slice: &mut [T]) {
     if slice.len() <= 1 {
         return;
@@ -46,6 +51,10 @@ pub fn ternary_quick_sort<T: Ord>(slice: &mut [T]) {
     ternary_quick_sort(&mut slice[pivot2 + 1..]);
 }
 
+/// partition slice in 3 part and return it's delimeter
+/// based on Dijkstra's Dutch national flag algorithm
+/// two pivot's are at front and back
+/// use comp to identify it's order
 fn ternary_partition_by<T, F>(slice: &mut [T], comp: &mut F) -> (usize, usize)
 where
     F: FnMut(&T, &T) -> std::cmp::Ordering,
@@ -98,6 +107,8 @@ where
     ternary_quick_by(&mut slice[pivot2 + 1..], comp);
 }
 
+/// sort slice with 3-way partition quick-sort algorithm
+/// use custom comparator 'comp' for sorting
 pub fn ternary_quick_sort_by<T, F>(slice: &mut [T], comp: F)
 where
     F: FnMut(&T, &T) -> std::cmp::Ordering,
