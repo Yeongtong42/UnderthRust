@@ -64,11 +64,12 @@ where
     quick_sort_by_comp(&mut slice[pivot_pos + 1..len], comp)
 }
 
-pub fn binary_quick_sort_by<T, F>(slice: &mut [T], mut comp: F)
+pub fn binary_quick_sort_by<T, F>(slice: &mut [T], comp: F)
 where
     F: FnMut(&T, &T) -> std::cmp::Ordering,
 {
-    quick_sort_by_comp(slice, &mut comp);
+    let mut cmp = comp;
+    quick_sort_by_comp(slice, &mut cmp);
 }
 
 #[cfg(test)]
