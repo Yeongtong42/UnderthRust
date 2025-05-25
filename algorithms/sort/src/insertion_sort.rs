@@ -2,7 +2,11 @@
 
 use std::ptr::{read, write};
 
-pub fn insertion_sort<T: Ord>(slice: &mut [T]) {
+/// insertion sort
+/// use pointer for insertion instead of reference
+/// this function can cause panic during comparing
+/// this function is unsafe because it loses owner ship of some data when panic rewinding occurs
+pub unsafe fn insertion_sort<T: Ord>(slice: &mut [T]) {
     if slice.is_empty() {
         return;
     }
@@ -21,7 +25,11 @@ pub fn insertion_sort<T: Ord>(slice: &mut [T]) {
     }
 }
 
-pub fn insertion_sort_by<T, F>(slice: &mut [T], comp: F)
+/// insertion sort by compare
+/// use pointer for insertion instead of reference
+/// this function can cause panic during comparing
+/// this function is unsafe because it loses owner ship of some data when panic rewinding occurs
+pub unsafe fn insertion_sort_by<T, F>(slice: &mut [T], comp: F)
 where
     F: FnMut(&T, &T) -> std::cmp::Ordering,
 {

@@ -16,7 +16,9 @@ fn test_insertion_sort() {
 
     let mut vec: Vec<i32> = rng.sample_iter(StandardUniform).take(TEST_SIZE).collect();
 
-    insertion_sort(&mut vec);
+    unsafe {
+        insertion_sort(&mut vec);
+    }
 
     assert!(vec.is_sorted());
 }
@@ -28,7 +30,9 @@ fn test_insertion_sort_by() {
 
     let mut vec: Vec<i32> = rng.sample_iter(StandardUniform).take(TEST_SIZE).collect();
 
-    insertion_sort_by(&mut vec, |a: &i32, b: &i32| Reverse(a).cmp(&Reverse(b)));
+    unsafe {
+        insertion_sort_by(&mut vec, |a: &i32, b: &i32| Reverse(a).cmp(&Reverse(b)));
+    }
 
     assert!(vec.is_sorted_by(|&a, &b| { a > b }));
 }
