@@ -79,11 +79,16 @@ where
 #[cfg(test)]
 mod tests {
 
+    use crate::*;
+    use std::cmp::Reverse;
+
     use rand::distr::StandardUniform;
     use rand::rngs::StdRng;
     use rand::{Rng, SeedableRng};
 
-    use crate::binary_quick_sort::partition;
+	use crate::binary_quick_sort::partition;
+
+    const TEST_SIZE: usize = 10_000;
 
     fn is_partitioned(slice: &[i32], pivot_pos: usize) -> bool {
         let len = slice.len();
@@ -111,5 +116,29 @@ mod tests {
         let pivot_pos = partition(&mut vec);
 
         assert!(is_partitioned(&vec, pivot_pos));
+    }
+
+    #[test]
+    fn test_binary_quick_sort() {
+        let seed: u64 = 42;
+        let rng = StdRng::seed_from_u64(seed);
+
+        let mut vec: Vec<i32> = rng.sample_iter(StandardUniform).take(TEST_SIZE).collect();
+
+        binary_quick_sort(&mut vec);
+
+        assert!(vec.is_sorted());
+    }
+
+    #[test]
+    fn test_binary_quick_sort_by() {
+        let seed: u64 = 42;
+        let rng = StdRng::seed_from_u64(seed);
+
+        let mut vec: Vec<i32> = rng.sample_iter(StandardUniform).take(TEST_SIZE).collect();
+
+        binary_quick_sort_by(&mut vec, |a: &i32, b: &i32| Reverse(a).cmp(&Reverse(b)));
+
+        assert!(vec.is_sorted_by(|&a, &b| { a > b }));
     }
 }
