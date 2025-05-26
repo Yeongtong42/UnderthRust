@@ -1,11 +1,25 @@
+//! # Description
+//! Implementation of merge-sort algorithm.
+
 #![allow(unused)]
 
 use std::alloc::{Layout, alloc, dealloc};
-use std::ptr::{self, copy_nonoverlapping, read, write};
+use std::ptr::{copy_nonoverlapping, write};
 
-/// non-recursive merge sort
-/// use pointer instead of ref during merging
-/// this function is safe because it restore all of data at once
+/// # Description
+/// non-recursive merge sort.
+///
+/// # Generic Parameter
+/// - T : type of data in the slice. Ord trait is necessary to compare T.
+///
+/// # Parameter
+/// - slice : slice to be sorted.
+///
+/// # Safety
+/// this function is safe because it restore all of data at once.
+/// Despite of the panic, there are no occurence of duplicated ownership.
+///
+/// But, this function allocates internal memeory, so there can be a leak.
 pub fn merge_sort<T: Ord>(slice: &mut [T]) {
     // slice size check
     let len = slice.len();
@@ -79,9 +93,22 @@ pub fn merge_sort<T: Ord>(slice: &mut [T]) {
     }
 }
 
-/// non-recursive merge sort by comp
-/// use pointer instead of ref during merging
-/// this function is safe because it restore all of data at once
+/// # Description
+/// non-recursive merge sort with comparator.
+///
+/// # Generic Parameter
+/// - T : type of data in the slice. Ord trait is not necessary.
+/// - F : callable, implementation of FnMut.
+///
+/// # Parameter
+/// - slice : slice to be sorted.
+/// - comp : callable object to compare two &T data and return Ordering.
+///
+/// # Safety
+/// this function is safe because it restore all of data at once.
+/// Despite of the panic, there are no occurence of duplicated ownership.
+///
+/// But, this function allocates internal memeory, so there can be a leak.
 pub fn merge_sort_by<T, F>(slice: &mut [T], comp: F)
 where
     F: FnMut(&T, &T) -> std::cmp::Ordering,
