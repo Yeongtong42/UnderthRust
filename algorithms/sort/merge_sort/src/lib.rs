@@ -130,7 +130,7 @@ pub fn merge_sort<T: Ord>(slice: &mut [T]) {
 /// ```
 /// use merge_sort::*;
 /// let mut v = vec![3, 1, 4, 1, 5];
-/// merge_sort(&mut v);
+/// merge_sort_by(&mut v, |a, b| a.cmp(b) );
 /// assert_eq!(v, vec![1, 1, 3, 4, 5]);
 /// ```
 pub fn merge_sort_by<T, F>(slice: &mut [T], comp: F)
