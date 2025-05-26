@@ -1,3 +1,5 @@
+//! # Description
+//! Implementation of quick-sort algorithms.
 mod binary_quick_sort;
 mod ternary_quick_sort;
 

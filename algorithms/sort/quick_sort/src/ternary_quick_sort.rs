@@ -37,8 +37,26 @@ fn ternary_partition<T: Ord>(slice: &mut [T]) -> (usize, usize) {
     (i, j)
 }
 
-/// sort slice with 3-way partition quick-sort algorithm
-/// use Ord trait for sorting
+/// # Description
+/// Sorts the given slice in-place using a three-way partition quick‑sort algorithm.
+///
+/// # Type Parameters
+/// - `T`: The element type. Must implement `Ord`.
+///
+/// # Parameters
+/// - `slice`: The mutable slice to sort.
+///
+/// # Panics
+/// Panics if calculating partition indices overflows (only for very large slices).
+/// Panics if the implementation of Ord panics.
+///
+/// # Examples
+/// ```
+/// use quick_sort::ternary_quick_sort;
+/// let mut v = vec![3, 1, 4, 1, 5];
+/// ternary_quick_sort(&mut v);
+/// assert_eq!(v, vec![1, 1, 3, 4, 5]);
+/// ```
 pub fn ternary_quick_sort<T: Ord>(slice: &mut [T]) {
     if slice.len() <= 1 {
         return;
@@ -107,8 +125,29 @@ where
     ternary_quick_by(&mut slice[pivot2 + 1..], comp);
 }
 
-/// sort slice with 3-way partition quick-sort algorithm
-/// use custom comparator 'comp' for sorting
+/// # Description
+/// Sorts the given slice in-place using a three-way partition quick‑sort algorithm
+/// whith comparator.
+///
+/// # Type Parameters
+/// - `T`: The element type.
+/// - 'F': The comparator type. Must implement 'FnMut' trait.
+///
+/// # Parameters
+/// - `slice`: The mutable slice to sort.
+/// - 'comp': The callable object to compare two &T data.
+///
+/// # Panics
+/// Panics if calculating partition indices overflows (only for very large slices).
+/// Panics if the implementation of 'comp' panics.///
+///
+/// # Examples
+/// ```
+/// use quick_sort::ternary_quick_sort_by;
+/// let mut v = vec![3, 1, 4, 1, 5];
+/// ternary_quick_sort_by(&mut v, |a : &i32, b : &i32|{ a.cmp(b) });
+/// assert_eq!(v, vec![1, 1, 3, 4, 5]);
+/// ```
 pub fn ternary_quick_sort_by<T, F>(slice: &mut [T], comp: F)
 where
     F: FnMut(&T, &T) -> std::cmp::Ordering,

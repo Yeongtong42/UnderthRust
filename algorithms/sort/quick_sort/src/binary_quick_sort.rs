@@ -15,7 +15,26 @@ fn partition<T: Ord>(slice: &mut [T]) -> usize {
     cur_left_pos - 1
 }
 
-/// sort slice with basic quick-sort algorithm
+/// # Description
+/// Sorts the given slice in-place using a basic partition quick‑sort algorithm.
+///
+/// # Type Parameters
+/// - `T`: The element type. Must implement `Ord`.
+///
+/// # Parameters
+/// - `slice`: The mutable slice to sort.
+///
+/// # Panics
+/// Panics if calculating partition indices overflows (only for very large slices).
+/// Panics if the implementation of Ord panics.///
+///
+/// # Examples
+/// ```
+/// use quick_sort::binary_quick_sort;
+/// let mut v = vec![3, 1, 4, 1, 5];
+/// binary_quick_sort(&mut v);
+/// assert_eq!(v, vec![1, 1, 3, 4, 5]);
+/// ```
 pub fn binary_quick_sort<T: Ord>(slice: &mut [T]) {
     let len = slice.len();
     if len <= 1 {
@@ -67,7 +86,29 @@ where
     quick_sort_by_comp(&mut slice[pivot_pos + 1..len], comp)
 }
 
-/// sort slice with basic quick-sort algorithm
+/// # Description
+/// Sorts the given slice in-place using a basic partition quick‑sort algorithm
+/// whith comparator.
+///
+/// # Type Parameters
+/// - `T`: The element type.
+/// - 'F': The comparator type. Must implement 'FnMut' trait.
+///
+/// # Parameters
+/// - `slice`: The mutable slice to sort.
+/// - 'comp': The callable object to compare two &T data.
+///
+/// # Panics
+/// Panics if calculating partition indices overflows (only for very large slices).
+/// Panics if the implementation of 'comp' panics.///
+///
+/// # Examples
+/// ```
+/// use quick_sort::binary_quick_sort_by;
+/// let mut v = vec![3, 1, 4, 1, 5];
+/// binary_quick_sort_by(&mut v, |a : &i32, b : &i32|{ a.cmp(b) });
+/// assert_eq!(v, vec![1, 1, 3, 4, 5]);
+/// ```
 pub fn binary_quick_sort_by<T, F>(slice: &mut [T], comp: F)
 where
     F: FnMut(&T, &T) -> std::cmp::Ordering,
@@ -86,7 +127,7 @@ mod tests {
     use rand::rngs::StdRng;
     use rand::{Rng, SeedableRng};
 
-	use crate::binary_quick_sort::partition;
+    use crate::binary_quick_sort::partition;
 
     const TEST_SIZE: usize = 10_000;
 
