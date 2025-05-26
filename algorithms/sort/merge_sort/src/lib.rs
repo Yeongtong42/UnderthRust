@@ -7,19 +7,31 @@ use std::alloc::{Layout, alloc, dealloc};
 use std::ptr::{copy_nonoverlapping, write};
 
 /// # Description
-/// non-recursive merge sort.
+/// Sorts the given slice stable using a non-recursive merge‑sort algorithm.
 ///
-/// # Generic Parameter
-/// - T : type of data in the slice. Ord trait is necessary to compare T.
+/// # Type Parameters
+/// - `T`: The element type. Must implement `Ord`.
 ///
-/// # Parameter
-/// - slice : slice to be sorted.
+/// # Parameters
+/// - `slice`: The mutable slice to sort.
+///
+/// # Panics
+/// Panics if calculating partition indices overflows (only for very large slices).
+/// Panics if the implementation of Ord panics.
 ///
 /// # Safety
-/// this function is safe because it restore all of data at once.
+/// This function is safe because it restore all of data at once.
 /// Despite of the panic, there are no occurence of duplicated ownership.
 ///
 /// But, this function allocates internal memeory, so there can be a leak.
+///
+/// # Examples
+/// ```
+/// use merge_sort::*;
+/// let mut v = vec![3, 1, 4, 1, 5];
+/// merge_sort(&mut v);
+/// assert_eq!(v, vec![1, 1, 3, 4, 5]);
+/// ```
 pub fn merge_sort<T: Ord>(slice: &mut [T]) {
     // slice size check
     let len = slice.len();
@@ -94,21 +106,33 @@ pub fn merge_sort<T: Ord>(slice: &mut [T]) {
 }
 
 /// # Description
-/// non-recursive merge sort with comparator.
+/// Sorts the given slice stable using a non-recursive merge‑sort algorithm with comparator.
 ///
-/// # Generic Parameter
-/// - T : type of data in the slice. Ord trait is not necessary.
-/// - F : callable, implementation of FnMut.
+/// # Type Parameters
+/// - `T`: The element type.
+/// - 'F': type of comparator. Must implement 'FnMut'
 ///
-/// # Parameter
-/// - slice : slice to be sorted.
-/// - comp : callable object to compare two &T data and return Ordering.
+/// # Parameters
+/// - `slice`: The mutable slice to sort.
+/// - 'comp': The callable object to compare two data of type T.
+///
+/// # Panics
+/// Panics if calculating partition indices overflows (only for very large slices).
+/// Panics if the implementation of Ord panics.
 ///
 /// # Safety
-/// this function is safe because it restore all of data at once.
+/// This function is safe because it restore all of data at once.
 /// Despite of the panic, there are no occurence of duplicated ownership.
 ///
 /// But, this function allocates internal memeory, so there can be a leak.
+///
+/// # Examples
+/// ```
+/// use merge_sort::*;
+/// let mut v = vec![3, 1, 4, 1, 5];
+/// merge_sort(&mut v);
+/// assert_eq!(v, vec![1, 1, 3, 4, 5]);
+/// ```
 pub fn merge_sort_by<T, F>(slice: &mut [T], comp: F)
 where
     F: FnMut(&T, &T) -> std::cmp::Ordering,
