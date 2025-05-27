@@ -10,6 +10,7 @@ pub mod algorithms {
     pub mod sort {
         pub mod counting_sort {
             pub use counting_sort::*;
+            pub use radix_sort::*;
         }
     }
 }
