@@ -1,0 +1,7 @@
+[package]
+name = "radix_sort"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+counting_sort = { path = "../counting_sort" }
