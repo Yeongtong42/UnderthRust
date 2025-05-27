@@ -92,11 +92,11 @@ where
 ///
 /// # Type Parameters
 /// - `T`: The element type.
-/// - 'F': The comparator type. Must implement 'FnMut' trait.
+/// - `F`: The comparator type. Must implement 'FnMut' trait.
 ///
 /// # Parameters
 /// - `slice`: The mutable slice to sort.
-/// - 'comp': The callable object to compare two &T data.
+/// - `comp`: The callable object to compare two &T data.
 ///
 /// # Panics
 /// Panics if calculating partition indices overflows (only for very large slices).

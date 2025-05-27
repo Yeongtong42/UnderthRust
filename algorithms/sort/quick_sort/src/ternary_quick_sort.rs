@@ -1,9 +1,29 @@
 #![allow(unused)]
 
-/// partition slice in 3 part and return it's delimeter
-/// based on Dijkstra's Dutch national flag algorithm
-/// two pivot's are at front and back
-fn ternary_partition<T: Ord>(slice: &mut [T]) -> (usize, usize) {
+/// # Description
+/// Partition slice in 3 part and return it's delimeter.
+/// This function is based on Dijkstra's Dutch national flag algorithm.
+/// Two pivot's are one at the front and the other at back.,
+///
+/// # Type Parameters
+/// - `T`: The element type. Must implement `Ord`.
+///
+/// # Parameters
+/// - `slice`: The mutable slice to partition.
+///
+/// # Panics
+/// Panics if the implementation of Ord panics.
+///
+/// # Examples
+/// ```
+/// use quick_sort::ternary_partition;
+/// let mut v = vec![3, 1, 4, 1, 5];
+/// let (i, j) = ternary_partition(&mut v);
+/// assert_eq!(i, 3);
+/// assert_eq!(j, 4);
+/// assert_eq!(v, vec![1, 1, 3, 4, 5]);
+/// ```
+pub fn ternary_partition<T: Ord>(slice: &mut [T]) -> (usize, usize) {
     use std::cmp::Ordering as O;
     let end = slice.len() - 1;
 
@@ -69,11 +89,33 @@ pub fn ternary_quick_sort<T: Ord>(slice: &mut [T]) {
     ternary_quick_sort(&mut slice[pivot2 + 1..]);
 }
 
-/// partition slice in 3 part and return it's delimeter
-/// based on Dijkstra's Dutch national flag algorithm
-/// two pivot's are at front and back
-/// use comp to identify it's order
-fn ternary_partition_by<T, F>(slice: &mut [T], comp: &mut F) -> (usize, usize)
+/// # Description
+/// Partition slice in 3 part and return it's delimeter.
+/// This function is based on Dijkstra's Dutch national flag algorithm.
+/// Two pivot's are one at the front and the other at back.
+/// Use comp to identify it's order.
+///
+/// # Type Parameters
+/// - `T`: The element type.
+/// - 'F': The comparator type. Must implement 'FnMut'.
+///
+/// # Parameters
+/// - `slice`: The mutable slice to partition.
+/// - `comp`: The callable object to compare two &T data.
+///
+/// # Panics
+/// Panics if the implementation of Ord panics.
+///
+/// # Examples
+/// ```
+/// use quick_sort::ternary_partition_by;
+/// let mut v = vec![3, 1, 4, 1, 5];
+/// let (i, j) = ternary_partition_by(&mut v, &mut |a: &i32, b: &i32| a.cmp(b));
+/// assert_eq!(i, 3);
+/// assert_eq!(j, 4);
+/// assert_eq!(v, vec![1, 1, 3, 4, 5]);
+/// ```
+pub fn ternary_partition_by<T, F>(slice: &mut [T], comp: &mut F) -> (usize, usize)
 where
     F: FnMut(&T, &T) -> std::cmp::Ordering,
 {
@@ -131,11 +173,11 @@ where
 ///
 /// # Type Parameters
 /// - `T`: The element type.
-/// - 'F': The comparator type. Must implement 'FnMut' trait.
+/// - `F`: The comparator type. Must implement 'FnMut' trait.
 ///
 /// # Parameters
 /// - `slice`: The mutable slice to sort.
-/// - 'comp': The callable object to compare two &T data.
+/// - `comp`: The callable object to compare two &T data.
 ///
 /// # Panics
 /// Panics if calculating partition indices overflows (only for very large slices).
