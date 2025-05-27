@@ -53,11 +53,11 @@ pub fn insertion_sort<T: Ord>(slice: &mut [T]) {
 ///
 /// # Type Parameters
 /// - `T`: The element type.
-/// - 'F': type of comparator. Must implement 'FnMut'
+/// - `F`: type of comparator. Must implement 'FnMut'
 ///
 /// # Parameters
 /// - `slice`: The mutable slice to sort.
-/// - 'comp': The callable object to compare two data of type T.
+/// - `comp`: The callable object to compare two data of type T.
 ///
 /// # Panics
 /// Panics if calculating partition indices overflows (only for very large slices).
