@@ -1,5 +1,3 @@
-#![allow(unused)]
-
 /// # Description
 /// Sorts the given slice in-place using a basic partition quick‑sort algorithm.
 ///
@@ -30,13 +28,12 @@ where
     F: FnMut(&T, &T) -> std::cmp::Ordering,
 {
     use std::cmp::Ordering as O;
-    let mut cmp = comp;
     let len = slice.len();
     let pivot = len - 1;
     let mut cur_left_pos = 0usize;
 
     for i in 0..len {
-        if O::Greater != cmp(&slice[i], &slice[pivot]) {
+        if O::Greater != comp(&slice[i], &slice[pivot]) {
             slice.swap(cur_left_pos, i);
             cur_left_pos += 1;
         }
