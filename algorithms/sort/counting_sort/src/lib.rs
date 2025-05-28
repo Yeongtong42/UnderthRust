@@ -158,6 +158,69 @@ pub trait CountingSortByKeyCached<T> {
         F: Fn(&T) -> usize;
 }
 
+#[derive(Debug, Clone, Copy)]
+enum Never {}
+
+fn get_accumulated_counter<E, I>(it: I) -> Result<Vec<usize>, E>
+where
+    I: Iterator<Item = Result<usize, E>>,
+{
+    let mut counter: Vec<usize> = Vec::new();
+    let mut max_key = 0;
+
+    for item in it {
+        let key = item?;
+        if counter.len() <= key {
+            counter.resize(key.checked_add(1).unwrap().next_power_of_two(), 0);
+        }
+        counter[key] = counter[key].checked_add(1).unwrap();
+        max_key = max_key.max(key);
+    }
+
+    for i in 1..=max_key {
+        counter[i] = counter[i].checked_add(counter[i - 1]).unwrap();
+    }
+
+    Ok(counter)
+}
+
+fn accumulated_counter2permutation<E, I>(
+    counter: &mut [usize],
+    it: I,
+    len: usize,
+) -> Result<Vec<usize>, E>
+where
+    I: DoubleEndedIterator<Item = Result<usize, E>> + ExactSizeIterator,
+{
+    let mut perm = vec![0; len];
+    for (idx, item) in it.enumerate().rev() {
+        let key = item?;
+        counter[key] -= 1;
+        perm[idx] = counter[key];
+    }
+    Ok(perm)
+}
+
+fn apply_permutation<T>(src: &mut [T], perm: &mut [usize]) {
+    for i in 0..src.len() {
+        while perm[i] != i {
+            let j = perm[i];
+            src.swap(i, j);
+            perm.swap(i, j);
+        }
+    }
+}
+
+fn apply_permutation_copy<T>(src: &mut [T], perm: &[usize])
+where
+    T: Copy,
+{
+    let cloned_src = src.to_vec();
+    for idx in 0..src.len() {
+        src[perm[idx]] = cloned_src[idx].clone();
+    }
+}
+
 impl<T> CountingSort for &mut [T]
 where
     T: Into<usize> + Copy,
@@ -166,33 +229,26 @@ where
         if self.len() <= 1 {
             return;
         }
-        let mut counter: Vec<usize> = Vec::new();
-        let mut max_key = 0;
 
-        for item in self.iter() {
-            let key = (*item).into();
-            if counter.len() <= key {
-                counter.resize(key.checked_add(1).unwrap().next_power_of_two(), 0);
-            }
-            counter[key] = counter[key].checked_add(1).unwrap();
-            max_key = max_key.max(key);
-        }
+        let mut counter = {
+            let it = self
+                .iter()
+                .cloned()
+                .map(Into::<usize>::into)
+                .map(Result::<usize, Never>::Ok);
+            get_accumulated_counter(it).unwrap()
+        };
 
-        for i in 1..=max_key {
-            counter[i] = counter[i].checked_add(counter[i - 1]).unwrap();
-        }
+        let perm = {
+            let it = self
+                .iter()
+                .cloned()
+                .map(Into::<usize>::into)
+                .map(Result::<usize, Never>::Ok);
+            accumulated_counter2permutation(&mut counter, it, self.len()).unwrap()
+        };
 
-        let mut perm = vec![0; self.len()];
-        for (idx, item) in self.iter().enumerate().rev() {
-            let key = (*item).into();
-            counter[key] -= 1;
-            perm[idx] = counter[key];
-        }
-
-        let cloned_self = self.to_vec();
-        for idx in 0..self.len() {
-            self[perm[idx]] = cloned_self[idx];
-        }
+        apply_permutation_copy(self, &perm);
     }
 }
 
@@ -205,35 +261,17 @@ where
         if self.len() <= 1 {
             return Ok(());
         }
-        let mut counter: Vec<usize> = Vec::new();
-        let mut max_key = 0;
+        let mut counter = {
+            let it = self.iter().cloned().map(|item| item.try_into());
+            get_accumulated_counter(it)?
+        };
 
-        for item in self.iter() {
-            let key = (*item).try_into()?;
-            if counter.len() <= key {
-                counter.resize(key.checked_add(1).unwrap().next_power_of_two(), 0);
-            }
-            counter[key] = counter[key].checked_add(1).unwrap();
-            max_key = max_key.max(key);
-        }
+        let perm = {
+            let it = self.iter().cloned().map(|item| item.try_into());
+            accumulated_counter2permutation(&mut counter, it, self.len())?
+        };
 
-        for i in 1..=max_key {
-            counter[i] = counter[i].checked_add(counter[i - 1]).unwrap();
-        }
-
-        let mut perm = vec![0; self.len()];
-        for (idx, item) in self.iter().enumerate().rev() {
-            let key = (*item).try_into()?;
-            counter[key] -= 1;
-            perm[idx] = counter[key];
-        }
-
-        let cloned_self = self.to_vec();
-        for idx in 0..self.len() {
-            self[perm[idx]] = cloned_self[idx];
-        }
-
-        Ok(())
+        Ok(apply_permutation_copy(self, &perm))
     }
 }
 
@@ -245,36 +283,18 @@ impl<T> CountingSortByKey<T> for &mut [T] {
         if self.len() <= 1 {
             return;
         }
-        let mut counter: Vec<usize> = Vec::new();
-        let mut max_key = 0;
+        let mut counter: Vec<usize> = {
+            let maybe_counter: Result<Vec<usize>, Never> =
+                get_accumulated_counter(self.iter().map(|item| Ok(key_fn(item))));
+            maybe_counter.unwrap()
+        };
 
-        for item in self.iter() {
-            let key = key_fn(item);
-            if counter.len() <= key {
-                counter.resize(key.checked_add(1).unwrap().next_power_of_two(), 0);
-            }
-            counter[key] = counter[key].checked_add(1).unwrap();
-            max_key = max_key.max(key);
-        }
+        let mut perm = {
+            let it = self.iter().map(key_fn).map(Result::<usize, Never>::Ok);
+            accumulated_counter2permutation(&mut counter, it, self.len()).unwrap()
+        };
 
-        for i in 1..=max_key {
-            counter[i] = counter[i].checked_add(counter[i - 1]).unwrap();
-        }
-
-        let mut perm = vec![0; self.len()];
-        for (idx, item) in self.iter().enumerate().rev() {
-            let key = key_fn(item);
-            counter[key] -= 1;
-            perm[idx] = counter[key];
-        }
-
-        for i in 0..self.len() {
-            while perm[i] != i {
-                let j = perm[i];
-                self.swap(i, j);
-                perm.swap(i, j);
-            }
-        }
+        apply_permutation(self, &mut perm);
     }
 }
 
@@ -286,37 +306,19 @@ impl<T> CountingSortByKeyCached<T> for &mut [T] {
         if self.len() <= 1 {
             return;
         }
-        let mut counter: Vec<usize> = Vec::new();
-        let mut max_key = 0;
-        let mut keys = Vec::with_capacity(self.len());
-        for item in self.iter() {
-            let key = key_fn(item);
-            keys.push(key);
-            if counter.len() <= key {
-                counter.resize(key.checked_add(1).unwrap().next_power_of_two(), 0);
-            }
-            counter[key] = counter[key].checked_add(1).unwrap();
-            max_key = max_key.max(key);
-        }
-        for i in 1..=max_key {
-            counter[i] = counter[i].checked_add(counter[i - 1]).unwrap();
-        }
 
-        let mut perm = vec![0; self.len()];
+        let keys: Vec<usize> = self.iter().map(key_fn).collect();
+        let mut counter = {
+            let it = keys.iter().cloned().map(Result::<usize, Never>::Ok);
+            get_accumulated_counter(it).unwrap()
+        };
 
-        for idx in (0..self.len()).rev() {
-            let key = keys[idx];
-            counter[key] -= 1;
-            perm[idx] = counter[key];
-        }
+        let mut perm = {
+            let it = keys.iter().cloned().map(Result::<usize, Never>::Ok);
+            accumulated_counter2permutation(&mut counter, it, self.len()).unwrap()
+        };
 
-        for i in 0..self.len() {
-            while perm[i] != i {
-                let j = perm[i];
-                self.swap(i, j);
-                perm.swap(i, j);
-            }
-        }
+        apply_permutation(self, &mut perm);
     }
 }
 
