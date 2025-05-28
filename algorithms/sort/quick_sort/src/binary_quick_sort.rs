@@ -1,20 +1,5 @@
 #![allow(unused)]
 
-/// partition slice with pivot at end
-fn partition<T: Ord>(slice: &mut [T]) -> usize {
-    let len = slice.len();
-    let pivot = len - 1;
-    let mut cur_left_pos = 0usize;
-
-    for i in 0..len {
-        if slice[i] <= slice[pivot] {
-            slice.swap(cur_left_pos, i);
-            cur_left_pos += 1;
-        }
-    }
-    cur_left_pos - 1
-}
-
 /// # Description
 /// Sorts the given slice in-place using a basic partition quick‑sort algorithm.
 ///
@@ -36,17 +21,7 @@ fn partition<T: Ord>(slice: &mut [T]) -> usize {
 /// assert_eq!(v, vec![1, 1, 3, 4, 5]);
 /// ```
 pub fn binary_quick_sort<T: Ord>(slice: &mut [T]) {
-    let len = slice.len();
-    if len <= 1 {
-        return;
-    }
-
-    // partition
-    let pivot_pos = partition(slice);
-
-    // recurse two part
-    binary_quick_sort(&mut slice[0..pivot_pos]);
-    binary_quick_sort(&mut slice[pivot_pos + 1..len]);
+    binary_quick_sort_by(slice, T::cmp)
 }
 
 /// partition slice with pivot at end by comp
@@ -73,8 +48,7 @@ fn quick_sort_by_comp<T, F>(slice: &mut [T], comp: &mut F)
 where
     F: FnMut(&T, &T) -> std::cmp::Ordering,
 {
-    let len = slice.len();
-    if len <= 1 {
+    if slice.len() <= 1 {
         return;
     }
 
@@ -83,7 +57,7 @@ where
 
     // recurse two part
     quick_sort_by_comp(&mut slice[0..pivot_pos], comp);
-    quick_sort_by_comp(&mut slice[pivot_pos + 1..len], comp)
+    quick_sort_by_comp(&mut slice[pivot_pos + 1..], comp)
 }
 
 /// # Description
@@ -109,12 +83,11 @@ where
 /// binary_quick_sort_by(&mut v, |a : &i32, b : &i32|{ a.cmp(b) });
 /// assert_eq!(v, vec![1, 1, 3, 4, 5]);
 /// ```
-pub fn binary_quick_sort_by<T, F>(slice: &mut [T], comp: F)
+pub fn binary_quick_sort_by<T, F>(slice: &mut [T], mut comp: F)
 where
     F: FnMut(&T, &T) -> std::cmp::Ordering,
 {
-    let mut cmp = comp;
-    quick_sort_by_comp(slice, &mut cmp);
+    quick_sort_by_comp(slice, &mut comp);
 }
 
 #[cfg(test)]
@@ -127,7 +100,7 @@ mod tests {
     use rand::rngs::StdRng;
     use rand::{Rng, SeedableRng};
 
-    use crate::binary_quick_sort::partition;
+    use crate::binary_quick_sort::partition_by;
 
     const TEST_SIZE: usize = 10_000;
 
@@ -154,7 +127,7 @@ mod tests {
 
         let mut vec: Vec<i32> = rng.sample_iter(StandardUniform).take(100).collect();
 
-        let pivot_pos = partition(&mut vec);
+        let pivot_pos = partition_by(&mut vec, &mut i32::cmp);
 
         assert!(is_partitioned(&vec, pivot_pos));
     }
