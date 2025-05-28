@@ -6,7 +6,7 @@
 //! Radix Sort는 요소의 순차적 projection에 대한 Stable Counting Sort의 반복입니다.
 //! 따라서 한 타입 T에 대한 Radix Sort는 T의 projection을 나열함으로서 정의됩니다.
 //!
-//! 본 모듈에서 projetion은 `Fn(&T) -> usize` trait을 구현하는 함수로 정의됩니다.
+//! 본 모듈에서 projection은 `Fn(&T) -> usize` trait을 구현하는 함수로 정의됩니다.
 //! 해당 Trait을 구현하는 함수는 동일한 type을 가지지 못하므로, 서로다른 타입의 순차적 projection을 위해서는 일반적인 방법을 사용할 수 없습니다.
 //! 따라서, 본 모듈에서는 2가지 방법을 제공합니다.
 //!
