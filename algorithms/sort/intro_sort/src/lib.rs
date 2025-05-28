@@ -1,11 +1,10 @@
 //! # Description
 //! Implementation of intro-sort algorithm.
 use heap_on_slice::Comparator;
-use heap_on_slice::{DefaultComparator, max_heap::MaxHeap};
-use insertion_sort::{insertion_sort, insertion_sort_by};
-use quick_sort::{ternary_partition, ternary_partition_by};
+use heap_on_slice::max_heap::MaxHeap;
+use insertion_sort::insertion_sort_by;
+use quick_sort::ternary_partition_by;
 use std::cell::RefCell;
-use std::marker::PhantomData;
 
 /// # Description
 /// Sorts the given slice in-place using a intro‑sort algorithm.
@@ -28,33 +27,7 @@ use std::marker::PhantomData;
 /// assert_eq!(v, vec![1, 1, 3, 4, 5]);
 /// ```
 pub fn intro_sort<T: Ord>(slice: &mut [T]) {
-    let len = slice.len();
-    if len == 0 {
-        return;
-    }
-    let max_depth = (usize::ilog2(len)) << 1;
-    intro_recurse_sort(slice, max_depth);
-}
-
-fn intro_recurse_sort<T: Ord>(slice: &mut [T], max_depth: u32) {
-    let len = slice.len();
-    if len < 16 {
-        // base case, small enough to use insertion sort
-        return insertion_sort(slice);
-    }
-    if max_depth == 0 {
-        // base case, to defend worst case, use heap sort instead
-        return MaxHeap::<T>::heap_sort(&DefaultComparator, slice);
-    }
-
-    // quick sort
-    // partition
-    let (pivot1, pivot2) = ternary_partition(slice);
-
-    // recurse
-    intro_recurse_sort(&mut slice[0..pivot1 - 1], max_depth - 1);
-    intro_recurse_sort(&mut slice[pivot1..pivot2], max_depth - 1);
-    intro_recurse_sort(&mut slice[pivot2 + 1..], max_depth - 1);
+    intro_sort_by(slice, T::cmp)
 }
 
 /// # Description
@@ -94,15 +67,11 @@ where
     intro_recurse_sort_by(slice, &mut comp, max_depth);
 }
 
-struct ComparatorBy<'a, T, F>
-where
-    F: FnMut(&T, &T) -> std::cmp::Ordering,
-{
+struct ComparatorBy<'a, F> {
     comp_by: RefCell<&'a mut F>,
-    none: std::marker::PhantomData<T>,
 }
 
-impl<'a, T, F> Comparator<T> for ComparatorBy<'a, T, F>
+impl<'a, T, F> Comparator<T> for ComparatorBy<'a, F>
 where
     F: FnMut(&T, &T) -> std::cmp::Ordering,
 {
@@ -118,11 +87,10 @@ where
     if slice.len() < 16 {
         return insertion_sort_by(slice, comp);
     } else if max_depth == 0 {
-        let c: ComparatorBy<T, F> = ComparatorBy {
+        return ComparatorBy {
             comp_by: RefCell::new(comp),
-            none: PhantomData,
-        };
-        return MaxHeap::heap_sort(&c, slice);
+        }
+        .heap_sort(slice);
     }
 
     // quick sort
