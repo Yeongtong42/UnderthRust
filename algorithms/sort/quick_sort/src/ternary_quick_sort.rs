@@ -1,5 +1,3 @@
-#![allow(unused)]
-
 /// # Description
 /// Partition slice in 3 part and return it's delimeter.
 /// This function is based on Dijkstra's Dutch national flag algorithm.
@@ -24,37 +22,7 @@
 /// assert_eq!(v, vec![1, 1, 3, 4, 5]);
 /// ```
 pub fn ternary_partition<T: Ord>(slice: &mut [T]) -> (usize, usize) {
-    use std::cmp::Ordering as O;
-    let end = slice.len() - 1;
-
-    if slice[0] > slice[end] {
-        slice.swap(0, end);
-    }
-
-    // [0, i) : smaller, equal pivot 1
-    // [i, j) : big than pivot 1 and smaller than pivot2
-    // [j.. : big, equal pivot 2
-    let mut i = 1usize;
-    let mut j = 1usize;
-    let mut k = end - 1;
-    while j <= k {
-        if slice[j].cmp(&slice[0]).is_le() {
-            // left
-            slice.swap(i, j);
-            i += 1;
-            j += 1;
-        } else if slice[j].cmp(&slice[end]).is_ge() {
-            // right
-            slice.swap(j, k);
-            k -= 1;
-        } else {
-            // mid
-            j += 1;
-        }
-    }
-    slice.swap(0, i - 1);
-    slice.swap(j, end);
-    (i, j)
+    ternary_partition_by(slice, &mut T::cmp)
 }
 
 /// # Description
@@ -78,15 +46,7 @@ pub fn ternary_partition<T: Ord>(slice: &mut [T]) -> (usize, usize) {
 /// assert_eq!(v, vec![1, 1, 3, 4, 5]);
 /// ```
 pub fn ternary_quick_sort<T: Ord>(slice: &mut [T]) {
-    if slice.len() <= 1 {
-        return;
-    }
-
-    let (pivot1, pivot2) = ternary_partition(slice);
-
-    ternary_quick_sort(&mut slice[0..pivot1 - 1]);
-    ternary_quick_sort(&mut slice[pivot1..pivot2]);
-    ternary_quick_sort(&mut slice[pivot2 + 1..]);
+    ternary_quick_sort_by(slice, T::cmp);
 }
 
 /// # Description
@@ -119,7 +79,6 @@ pub fn ternary_partition_by<T, F>(slice: &mut [T], comp: &mut F) -> (usize, usiz
 where
     F: FnMut(&T, &T) -> std::cmp::Ordering,
 {
-    use std::cmp::Ordering as O;
     let end = slice.len() - 1;
 
     if comp(&slice[0], &slice[end]).is_gt() {
@@ -190,12 +149,11 @@ where
 /// ternary_quick_sort_by(&mut v, |a : &i32, b : &i32|{ a.cmp(b) });
 /// assert_eq!(v, vec![1, 1, 3, 4, 5]);
 /// ```
-pub fn ternary_quick_sort_by<T, F>(slice: &mut [T], comp: F)
+pub fn ternary_quick_sort_by<T, F>(slice: &mut [T], mut comp: F)
 where
     F: FnMut(&T, &T) -> std::cmp::Ordering,
 {
-    let mut cmp = comp;
-    ternary_quick_by(slice, &mut cmp);
+    ternary_quick_by(slice, &mut comp);
 }
 
 #[cfg(test)]
@@ -209,8 +167,6 @@ mod tests {
     use rand::{Rng, SeedableRng};
 
     const TEST_SIZE: usize = 10_000;
-
-    use crate::ternary_quick_sort::ternary_partition;
 
     fn is_partitioned(slice: &[i32], pivot_pos: (usize, usize)) -> bool {
         let len = slice.len();
@@ -240,7 +196,7 @@ mod tests {
 
         let mut vec: Vec<i32> = rng.sample_iter(StandardUniform).take(100).collect();
 
-        let pivot_pos = ternary_partition(&mut vec);
+        let pivot_pos = ternary_partition_by(&mut vec, &mut i32::cmp);
 
         assert!(is_partitioned(&vec, pivot_pos));
     }
