@@ -9,5 +9,5 @@ quick_sort = {path = "../quick_sort"}
 heap_on_slice = {path = "../../adapter/heap_on_slice"}
 rand = "0.9.1"
 
-[dev-dependenciese]
+[dev-dependencies]
 rand = "0.9"
