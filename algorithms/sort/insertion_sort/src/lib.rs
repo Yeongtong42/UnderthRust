@@ -1,8 +1,6 @@
 //! # Description
 //! Implementation of insertion sort.
 
-use std::ptr::{copy, write};
-
 /// # Description
 /// Sorts the given slice stable using a insertion‑sort algorithm.
 ///
@@ -28,24 +26,7 @@ use std::ptr::{copy, write};
 /// assert_eq!(v, vec![1, 1, 3, 4, 5]);
 /// ```
 pub fn insertion_sort<T: Ord>(slice: &mut [T]) {
-    if slice.is_empty() {
-        return;
-    }
-    let len = slice.len();
-    let begin = &mut slice[0] as *mut T;
-    for i in 1..len {
-        unsafe {
-            let right_hand = begin.add(i).read();
-            let mut j = i;
-            while j > 0 && slice[j - 1] > right_hand {
-                j -= 1;
-            }
-            if j != i {
-                copy(begin.add(j), begin.add(j + 1), i - j); // overlap always, but safe
-                write(begin.add(j), right_hand);
-            }
-        }
-    }
+    insertion_sort_by(slice, T::cmp);
 }
 
 /// # Description
@@ -74,29 +55,21 @@ pub fn insertion_sort<T: Ord>(slice: &mut [T]) {
 /// insertion_sort_by(&mut v, |a : &i32, b:&i32| {a.cmp(b)});
 /// assert_eq!(v, vec![1, 1, 3, 4, 5]);
 /// ```
-pub fn insertion_sort_by<T, F>(slice: &mut [T], comp: F)
+pub fn insertion_sort_by<T, F>(slice: &mut [T], mut comp: F)
 where
     F: FnMut(&T, &T) -> std::cmp::Ordering,
 {
-    let mut cmp = comp;
     use std::cmp::Ordering as O;
     if slice.is_empty() {
         return;
     }
     let len = slice.len();
-    let begin = &mut slice[0] as *mut T;
     for i in 1..len {
-        unsafe {
-            let right_hand = begin.add(i).read();
-            let mut j = i;
-            while j > 0 && (O::Greater == cmp(&slice[j - 1], &right_hand)) {
-                j -= 1;
-            }
-            if j != i {
-                copy(begin.add(j), begin.add(j + 1), i - j); // overlap always, but safe
-                write(begin.add(j), right_hand);
-            }
+        let mut j = i;
+        while j > 0 && (O::Greater == comp(&slice[j - 1], &slice[i])) {
+            j -= 1;
         }
+        slice[j..=i].rotate_right(1);
     }
 }
 
@@ -111,6 +84,20 @@ mod tests {
     use crate::*;
 
     const TEST_SIZE: usize = 10_000;
+
+    #[test]
+    fn test_insertion_sort_with_empty() {
+        let mut vec: Vec<i32> = Vec::new();
+        insertion_sort(&mut vec);
+        assert!(vec.is_sorted());
+    }
+
+    #[test]
+    fn test_insertion_sort_with_size1() {
+        let mut vec: Vec<i32> = vec![0; 1];
+        insertion_sort(&mut vec);
+        assert!(vec.is_sorted());
+    }
 
     #[test]
     fn test_insertion_sort() {
