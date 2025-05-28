@@ -117,8 +117,23 @@
 //! ```
 //!
 //! # Panics
-//! 각 함수는 다음과 같은 상황에서 패닉을 발생시킬 수 있습니다:
-//! -
+//!
+//! 각 정렬 함수는 다음과 같은 상황에서 패닉을 발생시킬 수 있습니다:
+//!
+//! - `counting_sort`:
+//!   - 아이템을 `usize`로 변환한 키 값이 `usize::MAX`인 경우 (이로 인해 `counter` 배열 크기 계산 시 오버플로우 발생).
+//!   - 특정 키 값의 개수 또는 누적 개수가 `usize::MAX`를 초과하여 `counter` 값 계산 중 오버플로우가 발생하는 경우.
+//!
+//! - `try_counting_sort`:
+//!   - 아이템을 `usize`로 성공적으로 변환했으나 그 키 값이 `usize::MAX`인 경우.
+//!   - 특정 키 값의 개수 또는 누적 개수가 `usize::MAX`를 초과하는 경우.
+//!   - `TryIntoError`는 패닉 대신 `Err`로 반환됩니다.
+//!
+//! - `counting_sort_by_key` 및 `counting_sort_by_key_cached`:
+//!   - `key_fn`이 반환하는 키 값이 `usize::MAX`인 경우.
+//!   - 특정 키 값의 개수 또는 누적 개수가 `usize::MAX`를 초과하는 경우.
+//!
+//! 내부적으로 `counter` 배열의 크기를 계산하거나 카운트를 누적할 때 `usize` 오버플로우가 발생하면 `checked_add(...).unwrap()` 호출로 인해 패닉이 발생합니다.
 
 /// Into<usize>와 Clone을 implement하는 Sized 타입 T에 대해 &mut [T]에 autoimplement됩니다.
 /// counting_sort는 Failure가 발생하지 않으며, 반환이 없습니다.
@@ -131,6 +146,13 @@ pub trait CountingSort {
 /// try_counting_sort는 Failure가 발생할 수 있으며, 반환은 성공시 Ok(())를 반환하고, 실패시 Err를 반환합니다.
 /// i8, i16, i32, i64, isize, u32, u64와 같은 타입에 대해 사용됩니다.
 /// 정수형의 형변환의 일반적인 Error는 `std::num::TryFromIntError`임을 참고하십시오.
+///
+/// # Panics
+/// - 아이템을 `usize`로 성공적으로 변환했으나 그 키 값이 `usize::MAX`인 경우.
+/// - 특정 키 값의 개수 또는 누적 개수가 `usize::MAX`를 초과하는 경우.
+///
+/// # Errors
+/// - 아이템을 `usize`로 변환하는 데 실패하면 `TryIntoError`를 반환합니다.
 pub trait TryCountingSort {
     type TryIntoError;
     fn try_counting_sort(self) -> Result<(), Self::TryIntoError>;
@@ -138,9 +160,13 @@ pub trait TryCountingSort {
 
 /// CountingSortByKey trait은 Sized 타입 T에 대해서 &mut [T]에 autoimplement됩니다.
 /// 이 trait은 key_fn을 인자로 받아, key_fn을 통해 계산된 키를 기준으로 정렬합니다.
-/// key_fn은 Fn(&Self::IsArrayOf) -> usize 타입의 함수를 인자로 받습니다.
+/// key_fn은 Fn(&T) -> usize 타입의 함수를 인자로 받습니다.
 /// 이 trait은 각 요소에 대해 키를 두번씩 계산합니다.
 /// 따라서 키를 계산하는 비용이 키를 캐싱하는 비용보다 적을 때 사용할 수 있습니다.
+///
+/// # Panics
+/// - `key_fn`이 반환하는 키 값이 `usize::MAX`인 경우.
+/// - 특정 키 값의 개수 또는 누적 개수가 `usize::MAX`를 초과하는 경우.
 pub trait CountingSortByKey<T> {
     fn counting_sort_by_key<F>(self, key_fn: F)
     where
@@ -149,18 +175,38 @@ pub trait CountingSortByKey<T> {
 
 /// CountingSortByKeyCached trait은 Sized 타입 T에 대해서 &mut [T]에 autoimplement됩니다.
 /// 이 trait은 key_fn을 인자로 받아, key_fn을 통해 계산된 키를 기준으로 정렬합니다.
-/// key_fn은 Fn(&Self::IsArrayOf) -> usize 타입의 함수를 인자로 받습니다.
+/// key_fn은 Fn(&T) -> usize 타입의 함수를 인자로 받습니다.
 /// 이 trait은 다른 3개의 trait과 달리, key를 한번 계산한 후, 그 값을 캐싱하여 사용합니다.
 /// 따라서 key를 계산하는 비용이 캐싱하는 비용보다 클 때 사용할 수 있습니다.
+///
+/// # Panics
+/// - `key_fn`이 반환하는 키 값이 `usize::MAX`인 경우.
+/// - 특정 키 값의 개수 또는 누적 개수가 `usize::MAX`를 초과하는 경우.
 pub trait CountingSortByKeyCached<T> {
     fn counting_sort_by_key_cached<F>(self, key_fn: F)
     where
         F: Fn(&T) -> usize;
 }
 
+/// 에러 타입을 사용하지 않는 연산의 오류 채널을 위한 빈 열거형입니다.
+/// Result<T, Never>는 T와 동일하며, 이는
 #[derive(Debug, Clone, Copy)]
-enum Never {}
+enum Never {} // 이 타입의 값은 생성될 수 없습니다.
 
+/// 주어진 아이템 반복자로부터 키를 추출하여 카운터 배열을 생성하고,
+/// 각 키의 누적 등장 횟수를 계산하여 반환합니다.
+///
+/// # Parameters
+/// - `it`: `Result<usize, E>` 타입을 반환하는 아이템 반복자입니다. 각 `usize` 값은 정렬할 요소의 키입니다.
+///
+/// # Returns
+/// - 성공 시: 각 인덱스가 키를 나타내고, 해당 인덱스의 값이 해당 키까지의 누적 등장 횟수인 `Vec<usize>`를 반환합니다.
+/// - 실패 시: 반복자에서 발생한 첫 번째 에러 `E`를 반환합니다.
+///
+/// # Panics
+/// - 반복자에서 추출된 키 값이 `usize::MAX`인 경우.
+/// - 특정 키의 등장 횟수가 `usize::MAX`를 초과하는 경우.
+/// - 누적 등장 횟수 계산 중 `usize` 오버플로우가 발생하는 경우.
 fn get_accumulated_counter<E, I>(it: I) -> Result<Vec<usize>, E>
 where
     I: Iterator<Item = Result<usize, E>>,
@@ -184,6 +230,7 @@ where
     Ok(counter)
 }
 
+/// 누적 카운터 배열과 아이템 반복자로부터 안정 정렬을 위한 순열(permutation) 배열을 생성합니다.
 fn accumulated_counter2permutation<E, I>(
     counter: &mut [usize],
     it: I,
@@ -201,6 +248,8 @@ where
     Ok(perm)
 }
 
+/// 주어진 순열에 따라 슬라이스의 요소들을 제자리에서 재배치합니다 (swap 사용).
+/// 이 함수는 `T`가 `Copy` 트레잇을 구현하지 않은 경우에 사용됩니다.
 fn apply_permutation<T>(src: &mut [T], perm: &mut [usize]) {
     for i in 0..src.len() {
         while perm[i] != i {
@@ -211,6 +260,9 @@ fn apply_permutation<T>(src: &mut [T], perm: &mut [usize]) {
     }
 }
 
+/// 주어진 순열에 따라 슬라이스의 요소들을 재배치합니다 (복사 사용).
+/// 이 함수는 `T`가 `Copy` 트레잇을 구현한 경우에 사용됩니다.
+/// 원본 슬라이스의 복사본을 만들어 정렬된 위치에 요소들을 배치합니다.
 fn apply_permutation_copy<T>(src: &mut [T], perm: &[usize])
 where
     T: Copy,
