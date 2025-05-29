@@ -6,5 +6,9 @@ edition = "2024"
 [dependencies]
 binary_heap = { path = "../collections/binary_heap"}
 heap_on_slice = { path = "../algorithms/adapter/heap_on_slice"}
+insertion_sort = { path = "../algorithms/sort/insertion_sort"}
+merge_sort = {path = "../algorithms/sort/merge_sort"}
+quick_sort = {path = "../algorithms/sort/quick_sort"}
+intro_sort = {path = "../algorithms/sort/intro_sort"}
 counting_sort = { path = "../algorithms/sort/counting_sort"}
 radix_sort = { path = "../algorithms/sort/radix_sort"}

@@ -1,0 +1,13 @@
+[package]
+name = "intro_sort"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+insertion_sort = {path = "../insertion_sort"}
+quick_sort = {path = "../quick_sort"}
+heap_on_slice = {path = "../../adapter/heap_on_slice"}
+rand = "0.9.1"
+
+[dev-dependencies]
+rand = "0.9"
