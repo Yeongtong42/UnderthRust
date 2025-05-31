@@ -59,6 +59,9 @@ where
             (&mut slice[run_start_pos..run_end_pos]).reverse();
         }
 
+        // add new run
+        runs.push((run_start_pos, run_end_pos));
+
         // move start pos
         run_start_pos = run_end_pos;
     }
@@ -102,6 +105,8 @@ where
         cur_pos += 1;
     }
 }
+
+
 
 #[cfg(test)]
 mod tests {
