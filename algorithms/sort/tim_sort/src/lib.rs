@@ -22,7 +22,7 @@ where
     // half open range
     let mut run_start_pos = 0;
     while run_start_pos < size {
-		todo!();
+        todo!();
     }
 
     // merge runs using stacks
@@ -39,6 +39,24 @@ fn get_min_run_size(n: usize) -> (usize, usize) {
     (min_run_size, max_run_cnt)
 }
 
+/// insertion sort with binary search
+/// use std::slice::partition_point to search insertion point
+/// partition_point method use binary_search like algorithm
+fn binary_insertion_sort_by<T, F>(slice: &mut [T], mut comp: F, is_inc: bool)
+where
+    F: FnMut(&T, &T) -> std::cmp::Ordering,
+{
+    let len = slice.len();
+    let mut cur_pos = 1usize;
+    while cur_pos < len {
+        let insertion_pos = match is_inc {
+            true => slice[0..cur_pos].partition_point(|x| comp(x, &slice[cur_pos]).is_le()),
+            false => slice[0..cur_pos].partition_point(|x| comp(x, &slice[cur_pos]).is_gt()),
+        };
+        slice[insertion_pos..=cur_pos].rotate_right(1);
+        cur_pos += 1;
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -58,6 +76,22 @@ mod tests {
         let (min_run_size, max_run_cnt) = get_min_run_size(n);
         assert_eq!(min_run_size, 34);
         assert_eq!(max_run_cnt, 32);
+    }
+
+    #[test]
+    fn test_binary_insertion_sort_by() {
+        let seed: u64 = 42;
+        let rng = StdRng::seed_from_u64(seed);
+
+        let mut vec: Vec<i32> = rng.sample_iter(StandardUniform).take(1000).collect();
+
+        binary_insertion_sort_by(
+            &mut vec,
+            |a: &i32, b: &i32| Reverse(a).cmp(&Reverse(b)),
+            true,
+        );
+
+        assert!(vec.is_sorted_by(|&a, &b| { a > b }));
     }
 
     #[test]
