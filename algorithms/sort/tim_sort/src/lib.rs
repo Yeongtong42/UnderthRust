@@ -22,10 +22,55 @@ where
     // half open range
     let mut run_start_pos = 0;
     while run_start_pos < size {
-        todo!();
+        // one off error
+        if run_start_pos == size - 1 {
+            runs.push((run_start_pos, size));
+            break;
+        }
+
+        // decide either increase or not
+        let is_run_increase: bool = compare(&slice[run_start_pos], &slice[run_start_pos]).is_le();
+
+        // sort min run
+        let mut run_end_pos = (run_start_pos + min_run_size).min(size);
+        binary_insertion_sort_by(
+            &mut slice[run_start_pos..run_end_pos],
+            &mut compare,
+            is_run_increase,
+        );
+
+        // append run
+        if is_run_increase {
+            while run_end_pos < size
+                && compare(&slice[run_end_pos - 1], &slice[run_end_pos]).is_le()
+            {
+                run_end_pos += 1;
+            }
+        } else {
+            while run_end_pos < size
+                && compare(&slice[run_end_pos - 1], &slice[run_end_pos]).is_gt()
+            {
+                run_end_pos += 1;
+            }
+        }
+
+        // reverse decrease run
+        if !is_run_increase {
+            (&mut slice[run_start_pos..run_end_pos]).reverse();
+        }
+
+        // move start pos
+        run_start_pos = run_end_pos;
+    }
+
+    // no need to merge
+    if runs.len() == 1 {
+        return;
     }
 
     // merge runs using stacks
+    // need space for merge
+    // unsafe
 }
 
 /// min_run = min(n, 32~64)
