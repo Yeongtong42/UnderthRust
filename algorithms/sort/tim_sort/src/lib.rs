@@ -3,6 +3,10 @@
 
 #![allow(unused)]
 
+use std::alloc::{Layout, alloc, dealloc};
+
+type Run = (usize, usize);
+
 pub fn tim_sort<T: Ord>(slice: &mut [T]) {
     tim_sort_by(slice, T::cmp)
 }
@@ -11,8 +15,6 @@ pub fn tim_sort_by<T, F>(slice: &mut [T], mut compare: F)
 where
     F: FnMut(&T, &T) -> std::cmp::Ordering,
 {
-    type Run = (usize, usize);
-
     // calculate min run size
     let size = slice.len();
     let (min_run_size, max_run_cnt) = get_min_run_size(size);
@@ -22,42 +24,8 @@ where
     // half open range
     let mut run_start_pos = 0;
     while run_start_pos < size {
-        // one off error
-        if run_start_pos == size - 1 {
-            runs.push((run_start_pos, size));
-            break;
-        }
-
-        // decide either increase or not
-        let is_run_increase: bool = compare(&slice[run_start_pos], &slice[run_start_pos]).is_le();
-
-        // sort min run
-        let mut run_end_pos = (run_start_pos + min_run_size).min(size);
-        binary_insertion_sort_by(
-            &mut slice[run_start_pos..run_end_pos],
-            &mut compare,
-            is_run_increase,
-        );
-
-        // append run
-        if is_run_increase {
-            while run_end_pos < size
-                && compare(&slice[run_end_pos - 1], &slice[run_end_pos]).is_le()
-            {
-                run_end_pos += 1;
-            }
-        } else {
-            while run_end_pos < size
-                && compare(&slice[run_end_pos - 1], &slice[run_end_pos]).is_gt()
-            {
-                run_end_pos += 1;
-            }
-        }
-
-        // reverse decrease run
-        if !is_run_increase {
-            (&mut slice[run_start_pos..run_end_pos]).reverse();
-        }
+        let run_end_pos =
+            get_sorted_run_from_slice(slice, &mut compare, run_start_pos, min_run_size);
 
         // add new run
         runs.push((run_start_pos, run_end_pos));
@@ -72,8 +40,6 @@ where
     }
 
     // merge runs using stacks
-    // need space for merge
-    // unsafe
 }
 
 /// min_run = min(n, 32~64)
@@ -85,6 +51,53 @@ fn get_min_run_size(n: usize) -> (usize, usize) {
     }
     let max_run_cnt = (n / min_run_size) + ((n % min_run_size) > 0) as usize;
     (min_run_size, max_run_cnt)
+}
+
+// sort min run and append
+// return end pos of processed run
+fn get_sorted_run_from_slice<T, F>(
+    slice: &mut [T],
+    mut compare: F,
+    run_start_pos: usize,
+    min_run_size: usize,
+) -> usize
+where
+    F: FnMut(&T, &T) -> std::cmp::Ordering,
+{
+    let size = slice.len();
+
+    // one off error
+    if run_start_pos == size - 1 {
+        return size;
+    }
+
+    // decide either increase or not
+    let is_run_increase = compare(&slice[run_start_pos], &slice[run_start_pos + 1]).is_le();
+
+    // sort min run
+    let mut run_end_pos = (run_start_pos + min_run_size).min(size);
+    binary_insertion_sort_by(
+        &mut slice[run_start_pos..run_end_pos],
+        &mut compare,
+        is_run_increase,
+    );
+
+    // append run
+    if is_run_increase {
+        while run_end_pos < size && compare(&slice[run_end_pos - 1], &slice[run_end_pos]).is_le() {
+            run_end_pos += 1;
+        }
+    } else {
+        while run_end_pos < size && compare(&slice[run_end_pos - 1], &slice[run_end_pos]).is_gt() {
+            run_end_pos += 1;
+        }
+    }
+
+    // reverse decrease run
+    if !is_run_increase {
+        (&mut slice[run_start_pos..run_end_pos]).reverse();
+    }
+    run_end_pos
 }
 
 /// insertion sort with binary search
@@ -106,7 +119,10 @@ where
     }
 }
 
-
+//
+fn merge_run<T, F>(slice: &mut [T], mut comp: F, merge_buffer: *mut T, run1: Run, run2: Run) {
+    todo!();
+}
 
 #[cfg(test)]
 mod tests {
@@ -142,6 +158,22 @@ mod tests {
         );
 
         assert!(vec.is_sorted_by(|&a, &b| { a > b }));
+    }
+
+    #[test]
+    fn test_get_sorted_run_inc() {
+        let mut slice = [2, 3, -1, -5, 0, 4, 11, 15];
+        let run_end_pos = get_sorted_run_from_slice(&mut slice, i32::cmp, 0, 5);
+        assert_eq!(run_end_pos, 8);
+        assert_eq!(slice, [-5, -1, 0, 2, 3, 4, 11, 15]);
+    }
+
+    #[test]
+    fn test_get_sorted_run_dec() {
+        let mut slice = [3, 2, -1, -5, 0, 4, 11, 15];
+        let run_end_pos = get_sorted_run_from_slice(&mut slice, i32::cmp, 0, 4);
+        assert_eq!(run_end_pos, 4);
+        assert_eq!(slice, [-5, -1, 2, 3, 0, 4, 11, 15]);
     }
 
     #[test]
