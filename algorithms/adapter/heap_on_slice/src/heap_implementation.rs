@@ -167,13 +167,13 @@ where
     Some(init)
 }
 
-pub fn heap_reverse_sort<T, F>(arr: &mut [T], mut compare: F)
+pub fn heap_reverse_sort<T, F>(mut arr: &mut [T], mut compare: F)
 where
     F: FnMut(&T, &T) -> Ordering,
 {
     heapify(arr, &mut compare);
-    for _ in 0..arr.len() {
-        heap_pop(arr, &mut compare);
+    while let Some(init) = heap_pop(arr, &mut compare) {
+        arr = init;
     }
 }
 
@@ -184,117 +184,116 @@ where
     move_upward(arr, idx, &mut compare) || move_downward(arr, idx, &mut compare)
 }
 
-// #[cfg(test)]
-// mod unit_test {
-//     use crate::comparator::DefaultComparator;
-//     use crate::heap_implementation::*;
+#[cfg(test)]
+mod unit_test {
+    use crate::heap_implementation::*;
+    use std::cmp::Ordering;
 
-//     #[test]
-//     fn is_heap_true_and_false() {
-//         let comp = DefaultComparator;
-//         // empty and single-element heaps
-//         let empty: Vec<i32> = vec![];
-//         assert!(is_heap(&comp, &empty));
-//         let single = vec![1];
-//         assert!(is_heap(&comp, &single));
-//         // valid heap
-//         let heap = vec![1, 3, 2, 7, 5, 4];
-//         assert!(is_heap(&comp, &heap));
-//         // invalid heap: parent greater than child
-//         let bad = vec![2, 1];
-//         assert!(!is_heap(&comp, &bad));
-//     }
+    // Define the comparison functions that will be used in tests
+    fn default_compare<T: Ord>(a: &T, b: &T) -> Ordering {
+        a.cmp(b)
+    }
 
-//     #[test]
-//     fn test_single_upward_and_downward_adjustments() {
-//         let comp = DefaultComparator;
-//         // Upward adjustment scenario
-//         let mut arr_up = vec![1, 3, 5, 7, 9];
-//         assert!(is_heap(&comp, &arr_up));
-//         // break heap property by making a leaf too small
-//         arr_up[4] = 0;
-//         assert!(!is_heap(&comp, &arr_up));
-//         // fix upward
-//         assert!(move_upward(&comp, &mut arr_up, 4));
-//         assert!(is_heap(&comp, &arr_up));
+    fn reverse_compare<T: Ord>(a: &T, b: &T) -> Ordering {
+        b.cmp(a)
+    }
 
-//         // Downward adjustment scenario
-//         let mut arr_down = vec![2, 4, 6, 8, 10];
-//         assert!(is_heap(&comp, &arr_down));
-//         // break heap property by making root too large
-//         arr_down[0] = 12;
-//         assert!(!is_heap(&comp, &arr_down));
-//         // fix downward
-//         assert!(move_downward(&comp, &mut arr_down, 0));
-//         assert!(is_heap(&comp, &arr_down));
-//     }
+    #[test]
+    fn is_heap_true_and_false() {
+        // empty and single-element heaps
+        let mut empty: Vec<i32> = vec![];
+        assert!(is_heap(&mut empty, default_compare));
+        let mut single = vec![1];
+        assert!(is_heap(&mut single, default_compare));
+        // valid heap
+        let mut heap = vec![1, 3, 2, 7, 5, 4];
+        assert!(is_heap(&mut heap, default_compare));
+        // invalid heap: parent greater than child
+        let mut bad = vec![2, 1];
+        assert!(!is_heap(&mut bad, default_compare));
+    }
 
-//     #[test]
-//     fn test_heapify_builds_valid_heap() {
-//         let comp = DefaultComparator;
-//         let mut arr = vec![3, 1, 4, 2, 5];
-//         heapify(&comp, &mut arr);
-//         assert!(is_heap(&comp, &arr));
-//     }
+    #[test]
+    fn test_single_upward_and_downward_adjustments() {
+        // Upward adjustment scenario
+        let mut arr_up = vec![1, 3, 5, 7, 9];
+        assert!(is_heap(&mut arr_up, default_compare));
+        // break heap property by making a leaf too small
+        arr_up[4] = 0;
+        assert!(!is_heap(&mut arr_up, default_compare));
+        // fix upward
+        assert!(move_upward(&mut arr_up, 4, default_compare));
+        assert!(is_heap(&mut arr_up, default_compare));
 
-//     #[test]
-//     fn test_heap_pushpop_and_heap_pop() {
-//         let comp = DefaultComparator;
-//         // pushpop: small x
-//         let mut arr = vec![1, 2, 3];
-//         let x = heap_pushpop(&comp, &mut arr, 0);
-//         assert_eq!(x, 0);
-//         assert!(is_heap(&comp, &arr));
-//         // pushpop: large x
-//         let mut arr2 = vec![1, 2, 3];
-//         let y = heap_pushpop(&comp, &mut arr2, 5);
-//         assert_eq!(y, 1);
-//         assert!(is_heap(&comp, &arr2));
-//         // heap_pop
-//         let mut arr3 = vec![1, 3, 2];
-//         heapify(&comp, &mut arr3);
-//         if let Some(init) = heap_pop(&comp, &mut arr3) {
-//             assert_eq!(init.len(), 2);
-//             assert!(is_heap(&comp, init));
-//         } else {
-//             panic!("heap_pop returned None on non-empty heap");
-//         }
-//     }
+        // Downward adjustment scenario
+        let mut arr_down = vec![2, 4, 6, 8, 10];
+        assert!(is_heap(&mut arr_down, default_compare));
+        // break heap property by making root too large
+        arr_down[0] = 12;
+        assert!(!is_heap(&mut arr_down, default_compare));
+        // fix downward
+        assert!(move_downward(&mut arr_down, 0, default_compare));
+        assert!(is_heap(&mut arr_down, default_compare));
+    }
 
-//     #[test]
-//     fn test_adjust_heap_up_and_down() {
-//         let comp = DefaultComparator;
-//         // upward adjustment
-//         let mut arr = vec![0, 4, 1, 5, 7, 3, 2, 8, 6, 9];
-//         assert!(is_heap(&comp, &arr));
-//         // break heap property by changing arr[7] to 3
-//         arr[7] = 3;
-//         assert!(!is_heap(&comp, &arr));
-//         assert!(adjust_heap(&comp, &mut arr, 7));
-//         assert!(is_heap(&comp, &arr));
-//         // downward adjustment
-//         let mut arr2 = vec![0, 4, 1, 5, 7, 3, 2, 8, 6, 9];
-//         // break heap property by changing arr[0] to 7
-//         arr2[0] = 7;
-//         assert!(!is_heap(&comp, &arr2));
-//         assert!(adjust_heap(&comp, &mut arr2, 0));
-//         assert!(is_heap(&comp, &arr2));
-//     }
+    #[test]
+    fn test_heapify_builds_valid_heap() {
+        let mut arr = vec![3, 1, 4, 2, 5];
+        heapify(&mut arr, default_compare);
+        assert!(is_heap(&mut arr, default_compare));
+    }
 
-//     #[test]
-//     fn test_heap_reverse_sort_sorts_descending() {
-//         let comp = DefaultComparator;
-//         let mut arr = vec![3, 1, 4, 2, 5];
-//         heap_reverse_sort(&comp, &mut arr);
-//         assert_eq!(arr, vec![5, 4, 3, 2, 1]);
-//     }
+    #[test]
+    fn test_heap_pushpop_and_heap_pop() {
+        // pushpop: small x
+        let mut arr = vec![1, 2, 3];
+        heapify(&mut arr, default_compare); // Ensure it's a heap first
+        let x = heap_pushpop(&mut arr, 0, default_compare);
+        assert_eq!(x, 0);
+        assert!(is_heap(&mut arr, default_compare));
+        // pushpop: large x
+        let mut arr2 = vec![1, 2, 3];
+        heapify(&mut arr2, default_compare); // Ensure it's a heap first
+        let y = heap_pushpop(&mut arr2, 5, default_compare);
+        assert_eq!(y, 1);
+        assert!(is_heap(&mut arr2, default_compare));
+        // heap_pop
+        let mut arr3 = vec![1, 3, 2];
+        heapify(&mut arr3, default_compare);
+        if let Some(init) = heap_pop(&mut arr3, default_compare) {
+            assert_eq!(init.len(), 2);
+            assert!(is_heap(init, default_compare));
+        } else {
+            panic!("heap_pop returned None on non-empty heap");
+        }
+    }
 
-//     // Optionally, ascending order via ReverseComparator
-//     #[test]
-//     fn test_heap_reverse_sort_with_reverse_comparator_sorts_ascending() {
-//         let comp = crate::comparator::ReverseComparator;
-//         let mut arr = vec![3, 1, 4, 2, 5];
-//         heap_reverse_sort(&comp, &mut arr);
-//         assert_eq!(arr, vec![1, 2, 3, 4, 5]);
-//     }
-// }
+    #[test]
+    fn test_adjust_heap_up_and_down() {
+        // upward adjustment
+        let mut arr_adj_up = vec![2, 3, 4, 5, 1]; // 1 is out of place (too small for its pos)
+        assert!(!is_heap(&mut arr_adj_up, default_compare::<i32>));
+        assert!(adjust_heap(&mut arr_adj_up, 4, default_compare::<i32>));
+        assert!(is_heap(&mut arr_adj_up, default_compare::<i32>));
+
+        // downward adjustment
+        let mut arr_adj_down = vec![5, 1, 2, 3, 4]; // 5 is out of place (too large for root)
+        assert!(!is_heap(&mut arr_adj_down, default_compare::<i32>));
+        assert!(adjust_heap(&mut arr_adj_down, 0, default_compare::<i32>));
+        assert!(is_heap(&mut arr_adj_down, default_compare::<i32>));
+    }
+
+    #[test]
+    fn test_heap_reverse_sort_sorts_descending() {
+        let mut arr = vec![3, 1, 4, 2, 5];
+        heap_reverse_sort(&mut arr, default_compare);
+        assert_eq!(arr, vec![5, 4, 3, 2, 1]);
+    }
+
+    #[test]
+    fn test_heap_reverse_sort_with_reverse_comparator_sorts_ascending() {
+        let mut arr = vec![3, 1, 4, 2, 5];
+        heap_reverse_sort(&mut arr, reverse_compare);
+        assert_eq!(arr, vec![1, 2, 3, 4, 5]);
+    }
+}
