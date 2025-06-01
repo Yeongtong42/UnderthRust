@@ -62,18 +62,6 @@ where
     }
 }
 
-/// # Note
-/// ```ignore
-/// if arr.get(left).map(|x| comp.cmp(x, &arr[smallest_idx])) == Some(O::Less) {
-///     smallest_idx = left;
-/// }
-/// ```
-/// 이 코드는 left가 arr의 길이를 초과하는 경우를 처리하기 위한 코드이다. 아래 코드와 동일한 기능을 한다.
-/// ```ignore
-/// if left < arr.len() && comp.cmp(&arr[left], &arr[smallest_idx]) == O::Less {
-///    smallest_idx = left;
-/// }
-/// ```
 #[inline]
 fn single_downward<T, F>(arr: &mut [T], idx: &mut usize, mut compare: F) -> bool
 where
@@ -98,16 +86,6 @@ where
     }
 }
 
-/// # Note
-/// 더이상 힙 내 swap이 일어나지 않을 때까지 single_upward를 호출한다. 원래는
-/// ```ignore
-/// fn move_upward<T, C: Comparator<T>>(comp: &C, arr: &mut [T], mut idx: usize) -> bool {
-///     let original_idx = idx;
-///     while single_upward(comp, arr, &mut idx) {}
-///     original_idx != idx
-/// }
-/// ```
-/// 형태였으나, 논리적으로 move_upward 함수의 반환값은 첫 single_upward호출의 반환과 같으므로 지금과 같이 변경됨
 pub fn move_upward<T, F>(arr: &mut [T], mut idx: usize, mut compare: F) -> bool
 where
     F: FnMut(&T, &T) -> Ordering,
@@ -120,16 +98,6 @@ where
     }
 }
 
-/// # Note
-/// 더이상 힙 내 swap이 일어나지 않을 때까지 single_downward를 호출한다. 원래는
-/// ```ignore
-/// fn move_downward<T, C: Comparator<T>>(comp: &C, arr: &mut [T], mut idx: usize) -> bool {
-///     let original_idx = idx;
-///     while single_downward(comp, arr, &mut idx) {}
-///     original_idx != idx
-/// }
-/// ```
-/// 형태였으나, 논리적으로 move_downward 함수의 반환값은 첫 single_downward호출의 반환과 같으므로 지금과 같이 변경됨
 pub fn move_downward<T, F>(arr: &mut [T], mut idx: usize, mut compare: F) -> bool
 where
     F: FnMut(&T, &T) -> Ordering,
@@ -169,20 +137,6 @@ where
 /// 메서드 spec은 pop 후 push가 아닌, push 후 pop이다.
 /// 따라서 arr이 비어있거나, x가 arr의 root보다 작은 경우 x를 반환한다.
 /// root의 값과 같은 경우 최적화를 위해 힙을 조정하지 않고 x를 반환한다.
-/// ```ignore
-/// if arr.first().map(|y| comp.cmp(y, &x)) == Some(O::Less) {
-///     std::mem::swap(&mut arr[0], &mut x);
-///     move_downward(comp, arr, 0);
-/// }
-/// ```
-/// 이 코드는 1. arr이 비어있지 않으면서, 2. root가 x보다 작은 경우를 처리하기 위한 코드이다.
-/// 아래 코드와 동일한 기능을 한다.
-/// ```ignore
-/// if !arr.is_empty() && comp.cmp(&arr[0], &x) == O::Less {
-///     std::mem::swap(&mut arr[0], &mut x);
-///     move_downward(comp, arr, 0);
-/// }
-/// ```
 pub fn heap_pushpop<T, F>(arr: &mut [T], mut x: T, mut compare: F) -> T
 where
     F: FnMut(&T, &T) -> Ordering,
@@ -196,18 +150,7 @@ where
 
 /// # Note
 /// arr의 길이가 0인 경우와 1인 경우는 둘 다 특수 한 경우이다.
-/// ```ignore
-/// let (init, last) = arr.len().checked_sub(1).map(|len| arr.split_at_mut(len))?;
-/// ```
-/// 이 코드는 arr의 길이가 0인 경우를 처리하기 위한 코드이다. 아래 코드와 동일한 기능을 한다.
-/// ```ignore
-/// let len = arr.len();
-/// if len == 0 {
-///     return None;
-/// }
-/// let (init, last) = arr.split_at_mut(len - 1);
-/// ```
-pub fn heap_pop<T, F>(arr: &mut [T], mut compare: F) -> Option<&mut [T]>
+pub fn heap_pop<T, F>(arr: &mut [T], compare: F) -> Option<&mut [T]>
 where
     F: FnMut(&T, &T) -> Ordering,
 {
@@ -224,7 +167,7 @@ where
     Some(init)
 }
 
-pub fn heap_reverse_sort<T, F>(mut arr: &mut [T], mut compare: F)
+pub fn heap_reverse_sort<T, F>(arr: &mut [T], mut compare: F)
 where
     F: FnMut(&T, &T) -> Ordering,
 {
