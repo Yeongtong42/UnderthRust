@@ -201,46 +201,46 @@ mod unit_test {
     #[test]
     fn is_heap_true_and_false() {
         // empty and single-element heaps
-        let mut empty: Vec<i32> = vec![];
-        assert!(is_heap(&mut empty, default_compare));
-        let mut single = vec![1];
-        assert!(is_heap(&mut single, default_compare));
+        let empty: Vec<i32> = vec![];
+        assert!(is_heap(&empty, default_compare));
+        let single = vec![1];
+        assert!(is_heap(&single, default_compare));
         // valid heap
-        let mut heap = vec![1, 3, 2, 7, 5, 4];
-        assert!(is_heap(&mut heap, default_compare));
+        let heap = vec![1, 3, 2, 7, 5, 4];
+        assert!(is_heap(&heap, default_compare));
         // invalid heap: parent greater than child
-        let mut bad = vec![2, 1];
-        assert!(!is_heap(&mut bad, default_compare));
+        let bad = vec![2, 1];
+        assert!(!is_heap(&bad, default_compare));
     }
 
     #[test]
     fn test_single_upward_and_downward_adjustments() {
         // Upward adjustment scenario
         let mut arr_up = vec![1, 3, 5, 7, 9];
-        assert!(is_heap(&mut arr_up, default_compare));
+        assert!(is_heap(&arr_up, default_compare));
         // break heap property by making a leaf too small
         arr_up[4] = 0;
-        assert!(!is_heap(&mut arr_up, default_compare));
+        assert!(!is_heap(&arr_up, default_compare));
         // fix upward
         assert!(move_upward(&mut arr_up, 4, default_compare));
-        assert!(is_heap(&mut arr_up, default_compare));
+        assert!(is_heap(&arr_up, default_compare));
 
         // Downward adjustment scenario
         let mut arr_down = vec![2, 4, 6, 8, 10];
-        assert!(is_heap(&mut arr_down, default_compare));
+        assert!(is_heap(&arr_down, default_compare));
         // break heap property by making root too large
         arr_down[0] = 12;
-        assert!(!is_heap(&mut arr_down, default_compare));
+        assert!(!is_heap(&arr_down, default_compare));
         // fix downward
         assert!(move_downward(&mut arr_down, 0, default_compare));
-        assert!(is_heap(&mut arr_down, default_compare));
+        assert!(is_heap(&arr_down, default_compare));
     }
 
     #[test]
     fn test_heapify_builds_valid_heap() {
         let mut arr = vec![3, 1, 4, 2, 5];
         heapify(&mut arr, default_compare);
-        assert!(is_heap(&mut arr, default_compare));
+        assert!(is_heap(&arr, default_compare));
     }
 
     #[test]
@@ -250,13 +250,13 @@ mod unit_test {
         heapify(&mut arr, default_compare); // Ensure it's a heap first
         let x = heap_pushpop(&mut arr, 0, default_compare);
         assert_eq!(x, 0);
-        assert!(is_heap(&mut arr, default_compare));
+        assert!(is_heap(&arr, default_compare));
         // pushpop: large x
         let mut arr2 = vec![1, 2, 3];
         heapify(&mut arr2, default_compare); // Ensure it's a heap first
         let y = heap_pushpop(&mut arr2, 5, default_compare);
         assert_eq!(y, 1);
-        assert!(is_heap(&mut arr2, default_compare));
+        assert!(is_heap(&arr2, default_compare));
         // heap_pop
         let mut arr3 = vec![1, 3, 2];
         heapify(&mut arr3, default_compare);
@@ -272,15 +272,15 @@ mod unit_test {
     fn test_adjust_heap_up_and_down() {
         // upward adjustment
         let mut arr_adj_up = vec![2, 3, 4, 5, 1]; // 1 is out of place (too small for its pos)
-        assert!(!is_heap(&mut arr_adj_up, default_compare::<i32>));
+        assert!(!is_heap(&arr_adj_up, default_compare::<i32>));
         assert!(adjust_heap(&mut arr_adj_up, 4, default_compare::<i32>));
-        assert!(is_heap(&mut arr_adj_up, default_compare::<i32>));
+        assert!(is_heap(&arr_adj_up, default_compare::<i32>));
 
         // downward adjustment
         let mut arr_adj_down = vec![5, 1, 2, 3, 4]; // 5 is out of place (too large for root)
-        assert!(!is_heap(&mut arr_adj_down, default_compare::<i32>));
+        assert!(!is_heap(&arr_adj_down, default_compare::<i32>));
         assert!(adjust_heap(&mut arr_adj_down, 0, default_compare::<i32>));
-        assert!(is_heap(&mut arr_adj_down, default_compare::<i32>));
+        assert!(is_heap(&arr_adj_down, default_compare::<i32>));
     }
 
     #[test]
