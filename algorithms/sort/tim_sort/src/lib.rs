@@ -5,6 +5,7 @@
 
 use std::alloc::{Layout, alloc, dealloc};
 use std::collections::VecDeque;
+use std::ptr::{read, write};
 
 type Run = (usize, usize);
 
@@ -42,41 +43,33 @@ where
 
     // buffer allocation
     // allocate additional space for merge
-    let merge_buffer;
-    let layout = Layout::array::<T>(size / 2 + 1).unwrap();
-    unsafe {
-        merge_buffer = alloc(layout) as *mut T;
-    }
-    if merge_buffer.is_null() {
-        // allocation failed
-        panic!();
-    }
+    let mut merge_buffer: Vec<T> = Vec::with_capacity(size);
 
     // merge runs using stacks
     let mut run_stack: VecDeque<Run> = VecDeque::new();
     // init run stack
     for cur_run in runs {
         run_stack.push_back(cur_run);
-        keep_run_stack_invariant(slice, &mut compare, merge_buffer, &mut run_stack);
+        keep_run_stack_invariant(
+            slice,
+            &mut compare,
+            merge_buffer.as_mut_ptr(),
+            &mut run_stack,
+        );
     }
 
     // merge all run in the stack
     while run_stack.len() > 1 {
         // merge top two run in the stack
         let cur_run = run_stack.pop_back().unwrap();
-        merge_run(
+        merge_two_run(
             slice,
             &mut compare,
-            merge_buffer,
+            merge_buffer.as_mut_ptr(),
             run_stack.back().unwrap().clone(),
             cur_run.clone(),
         );
         run_stack.back_mut().unwrap().1 = cur_run.1;
-    }
-
-    // delete merge buffer
-    unsafe {
-        dealloc(merge_buffer as *mut u8, layout);
     }
 }
 
@@ -172,7 +165,7 @@ fn keep_run_stack_invariant<T, F>(
         let third_from_top = run_stack.pop_back().unwrap();
 
         if is_run_gt(&third_from_top, &first_from_top) {
-            merge_run(
+            merge_two_run(
                 slice,
                 &mut compare,
                 merge_buffer,
@@ -182,7 +175,7 @@ fn keep_run_stack_invariant<T, F>(
             run_stack.push_back(third_from_top);
             run_stack.push_back((second_from_top.0, first_from_top.1));
         } else {
-            merge_run(
+            merge_two_run(
                 slice,
                 &mut compare,
                 merge_buffer,
@@ -214,9 +207,15 @@ fn is_run_gt(r1: &Run, r2: &Run) -> bool {
     (r1.1 - r1.0) > (r2.1 - r2.0)
 }
 
-//
-fn merge_run<T, F>(slice: &mut [T], mut comp: F, merge_buffer: *mut T, run1: Run, run2: Run) {
+// merge two adjacent run
+// memory optimization is not applied
+fn merge_two_run<T, F>(slice: &mut [T], mut comp: F, merge_buffer: *mut T, run1: Run, run2: Run) {
     todo!();
+    // find merge area using binary search
+    // partition point, find left point
+    // partition point, find right point
+
+    // galloping mode
 }
 
 #[cfg(test)]
