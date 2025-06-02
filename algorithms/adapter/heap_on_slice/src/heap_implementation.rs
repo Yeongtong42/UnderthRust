@@ -10,7 +10,7 @@ use std::cmp::Ordering;
 
 /// # Note
 /// [0, n/2)가 parent node이고 [n/2, n) 가 leaf node이므로 $[0, len / 2)$에 대해 확인한다.
-pub fn is_heap<T, F>(arr: &mut [T], mut compare: F) -> bool
+pub fn is_heap<T, F>(arr: &[T], mut compare: F) -> bool
 where
     F: FnMut(&T, &T) -> Ordering,
 {
