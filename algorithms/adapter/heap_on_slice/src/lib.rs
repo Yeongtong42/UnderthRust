@@ -60,11 +60,7 @@
 //! ```
 //! 와 같이 명시적으로 trait을 지정해야 한다.
 
-pub mod comparator;
-pub use comparator::*;
-
 mod heap_implementation;
-use heap_implementation::*;
 
 pub mod max_heap;
 pub mod min_heap;
