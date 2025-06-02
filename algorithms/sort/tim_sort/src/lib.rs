@@ -4,6 +4,7 @@
 #![allow(unused)]
 
 use std::alloc::{Layout, alloc, dealloc};
+use std::collections::VecDeque;
 
 type Run = (usize, usize);
 
@@ -39,7 +40,44 @@ where
         return;
     }
 
+    // buffer allocation
+    // allocate additional space for merge
+    let merge_buffer;
+    let layout = Layout::array::<T>(size / 2 + 1).unwrap();
+    unsafe {
+        merge_buffer = alloc(layout) as *mut T;
+    }
+    if merge_buffer.is_null() {
+        // allocation failed
+        panic!();
+    }
+
     // merge runs using stacks
+    let mut run_stack: VecDeque<Run> = VecDeque::new();
+    // init run stack
+    for cur_run in runs {
+        run_stack.push_back(cur_run);
+        keep_run_stack_invariant(slice, &mut compare, merge_buffer, &mut run_stack);
+    }
+
+    // merge all run in the stack
+    while run_stack.len() > 1 {
+        // merge top two run in the stack
+        let cur_run = run_stack.pop_back().unwrap();
+        merge_run(
+            slice,
+            &mut compare,
+            merge_buffer,
+            run_stack.back().unwrap().clone(),
+            cur_run.clone(),
+        );
+        run_stack.back_mut().unwrap().1 = cur_run.1;
+    }
+
+    // delete merge buffer
+    unsafe {
+        dealloc(merge_buffer as *mut u8, layout);
+    }
 }
 
 /// min_run = min(n, 32~64)
@@ -117,6 +155,63 @@ where
         slice[insertion_pos..=cur_pos].rotate_right(1);
         cur_pos += 1;
     }
+}
+
+// update run_stack
+fn keep_run_stack_invariant<T, F>(
+    slice: &mut [T],
+    mut compare: F,
+    merge_buffer: *mut T,
+    run_stack: &mut VecDeque<Run>,
+) where
+    F: FnMut(&T, &T) -> std::cmp::Ordering,
+{
+    while !is_run_stack_ok(run_stack) {
+        let first_from_top = run_stack.pop_back().unwrap();
+        let second_from_top = run_stack.pop_back().unwrap();
+        let third_from_top = run_stack.pop_back().unwrap();
+
+        if is_run_gt(&third_from_top, &first_from_top) {
+            merge_run(
+                slice,
+                &mut compare,
+                merge_buffer,
+                second_from_top,
+                first_from_top,
+            );
+            run_stack.push_back(third_from_top);
+            run_stack.push_back((second_from_top.0, first_from_top.1));
+        } else {
+            merge_run(
+                slice,
+                &mut compare,
+                merge_buffer,
+                third_from_top,
+                second_from_top,
+            );
+            run_stack.push_back((third_from_top.0, second_from_top.1));
+            run_stack.push_back(first_from_top);
+        }
+    }
+}
+
+fn is_run_stack_ok(run_stack: &mut VecDeque<Run>) -> bool {
+    let size = run_stack.len();
+    if size < 3 {
+        return true;
+    }
+
+    let first = run_stack[size - 1];
+    let second = run_stack[size - 2];
+    let third = run_stack[size - 3];
+    let first = first.1 - first.0;
+    let second = second.1 - second.0;
+    let third = third.1 - third.0;
+    return first < second && (first + second) < third;
+}
+
+fn is_run_gt(r1: &Run, r2: &Run) -> bool {
+    (r1.1 - r1.0) > (r2.1 - r2.0)
 }
 
 //
