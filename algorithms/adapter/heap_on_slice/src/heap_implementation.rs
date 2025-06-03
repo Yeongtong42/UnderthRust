@@ -296,4 +296,232 @@ mod unit_test {
         heap_reverse_sort(&mut arr, reverse_compare);
         assert_eq!(arr, vec![1, 2, 3, 4, 5]);
     }
+
+    #[test]
+    fn test_single_upward() {
+        // Test single upward movement when swap is needed
+        let mut arr = vec![5, 2, 3, 7, 1]; // 1 at index 4 should move up
+        let mut idx = 4;
+        assert!(single_upward(&mut arr, &mut idx, default_compare));
+        assert_eq!(idx, 1); // Should move to parent position
+        assert_eq!(arr[1], 1); // 1 should be at position 1
+        assert_eq!(arr[4], 2); // 2 should be at position 4
+
+        // Test single upward when no swap is needed
+        let mut arr2 = vec![1, 2, 3, 4, 5];
+        let mut idx2 = 4;
+        assert!(!single_upward(&mut arr2, &mut idx2, default_compare));
+        assert_eq!(idx2, 4); // Index should remain the same
+
+        // Test with root element (should return false)
+        let mut arr3 = vec![1, 2, 3];
+        let mut idx3 = 0;
+        assert!(!single_upward(&mut arr3, &mut idx3, default_compare));
+        assert_eq!(idx3, 0);
+
+        // Test upward with equal elements
+        let mut arr4 = vec![2, 2, 3, 4, 2]; // Equal elements, should not swap
+        let mut idx4 = 4;
+        assert!(!single_upward(&mut arr4, &mut idx4, default_compare));
+        assert_eq!(idx4, 4);
+    }
+
+    #[test]
+    fn test_single_downward() {
+        // Test single downward movement when swap is needed
+        let mut arr = vec![5, 1, 2, 7, 8]; // 5 at root should move down
+        let mut idx = 0;
+        assert!(single_downward(&mut arr, &mut idx, default_compare));
+        assert_eq!(idx, 1); // Should move to left child position
+        assert_eq!(arr[0], 1); // 1 should be at root
+        assert_eq!(arr[1], 5); // 5 should be at position 1
+
+        // Test single downward when no swap is needed
+        let mut arr2 = vec![1, 2, 3, 4, 5];
+        let mut idx2 = 0;
+        assert!(!single_downward(&mut arr2, &mut idx2, default_compare));
+        assert_eq!(idx2, 0); // Index should remain the same
+
+        // Test with leaf node (should return false)
+        let mut arr3 = vec![1, 2, 3, 4, 5];
+        let mut idx3 = 4;
+        assert!(!single_downward(&mut arr3, &mut idx3, default_compare));
+        assert_eq!(idx3, 4);
+
+        // Test with only left child
+        let mut arr4 = vec![3, 1]; // Only left child exists
+        let mut idx4 = 0;
+        assert!(single_downward(&mut arr4, &mut idx4, default_compare));
+        assert_eq!(idx4, 1);
+        assert_eq!(arr4[0], 1);
+        assert_eq!(arr4[1], 3);
+
+        // Test choosing smaller of two children
+        let mut arr5 = vec![5, 3, 2]; // Both children exist, should choose smaller (2)
+        let mut idx5 = 0;
+        assert!(single_downward(&mut arr5, &mut idx5, default_compare));
+        assert_eq!(idx5, 2); // Should move to right child position
+        assert_eq!(arr5[0], 2);
+        assert_eq!(arr5[2], 5);
+
+        // Test with equal children (should choose left)
+        let mut arr6 = vec![5, 2, 2]; // Equal children, should choose left
+        let mut idx6 = 0;
+        assert!(single_downward(&mut arr6, &mut idx6, default_compare));
+        assert_eq!(idx6, 1); // Should move to left child position
+        assert_eq!(arr6[0], 2);
+        assert_eq!(arr6[1], 5);
+    }
+
+    #[test]
+    fn test_move_upward_comprehensive() {
+        // Test complete upward movement from a valid heap
+        let mut arr = vec![1, 3, 2, 7, 5, 4, 8];
+        heapify(&mut arr, default_compare); // Ensure it's a valid heap first
+        assert!(is_heap(&arr, default_compare));
+
+        // Place 0 at a leaf position that needs to bubble up
+        let last_idx = arr.len() - 1;
+        arr[last_idx] = 0; // Place 0 at the last position
+        assert!(move_upward(&mut arr, last_idx, default_compare));
+        assert!(is_heap(&arr, default_compare));
+        assert_eq!(arr[0], 0); // Should reach the root
+
+        // Test no movement needed
+        let mut arr2 = vec![1, 2, 3, 4, 5];
+        assert!(!move_upward(&mut arr2, 4, default_compare));
+        assert_eq!(arr2, vec![1, 2, 3, 4, 5]); // Should remain unchanged
+
+        // Test partial upward movement with valid heap
+        let mut arr3 = vec![1, 2, 3, 4, 5, 6, 7, 8, 9];
+        heapify(&mut arr3, default_compare); // Make it a valid heap
+        assert!(is_heap(&arr3, default_compare));
+
+        // Break heap property at a leaf and fix it
+        arr3[8] = 0; // Place 0 at index 8 (should move up)
+        assert!(move_upward(&mut arr3, 8, default_compare));
+        assert!(is_heap(&arr3, default_compare));
+
+        // Test with root index
+        let mut arr4 = vec![1, 2, 3, 4, 5];
+        assert!(!move_upward(&mut arr4, 0, default_compare));
+        assert_eq!(arr4, vec![1, 2, 3, 4, 5]);
+    }
+
+    #[test]
+    fn test_move_downward_comprehensive() {
+        // Test complete downward movement with valid heap
+        let mut arr = vec![1, 2, 3, 4, 5, 6, 7];
+        heapify(&mut arr, default_compare); // Make it a valid heap first
+        assert!(is_heap(&arr, default_compare));
+
+        // Break heap property at root and fix it
+        arr[0] = 10; // 10 at root should move down
+        assert!(move_downward(&mut arr, 0, default_compare));
+        assert!(is_heap(&arr, default_compare));
+
+        // Test no movement needed
+        let mut arr2 = vec![1, 2, 3, 4, 5];
+        assert!(!move_downward(&mut arr2, 0, default_compare));
+        assert_eq!(arr2, vec![1, 2, 3, 4, 5]); // Should remain unchanged
+
+        // Test leaf node (no children)
+        let mut arr3 = vec![1, 2, 3, 4, 5];
+        assert!(!move_downward(&mut arr3, 4, default_compare));
+        assert_eq!(arr3, vec![1, 2, 3, 4, 5]); // Should remain unchanged
+
+        // Test movement from internal node
+        let mut arr4 = vec![1, 2, 3, 4, 5, 6, 7];
+        heapify(&mut arr4, default_compare); // Make it a valid heap
+        assert!(is_heap(&arr4, default_compare));
+
+        // Break heap property at index 1 and fix it
+        arr4[1] = 8; // 8 at index 1 should move down
+        assert!(move_downward(&mut arr4, 1, default_compare));
+        assert!(is_heap(&arr4, default_compare));
+    }
+
+    #[test]
+    fn test_edge_cases_private_functions() {
+        // Test single_upward with equal elements
+        let mut arr_equal = vec![2, 2, 2, 2, 1];
+        let mut idx = 4;
+        assert!(single_upward(&mut arr_equal, &mut idx, default_compare));
+
+        // Test single_downward with equal elements
+        let mut arr_equal2 = vec![2, 1, 1, 3, 4];
+        let mut idx2 = 0;
+        assert!(single_downward(&mut arr_equal2, &mut idx2, default_compare));
+
+        // Test boundary conditions
+        let mut single_elem = vec![1];
+        let mut idx3 = 0;
+        assert!(!single_upward(&mut single_elem, &mut idx3, default_compare));
+        assert!(!single_downward(
+            &mut single_elem,
+            &mut idx3,
+            default_compare
+        ));
+
+        // Test with two elements
+        let mut two_elem = vec![2, 1];
+        let mut idx4 = 1;
+        assert!(single_upward(&mut two_elem, &mut idx4, default_compare));
+        assert_eq!(two_elem, vec![1, 2]);
+
+        let mut two_elem2 = vec![2, 1];
+        let mut idx5 = 0;
+        assert!(single_downward(&mut two_elem2, &mut idx5, default_compare));
+        assert_eq!(two_elem2, vec![1, 2]);
+
+        // Test with reverse comparator
+        let mut arr_rev = vec![1, 3, 2, 4, 5];
+        let mut idx6 = 4;
+        assert!(single_upward(&mut arr_rev, &mut idx6, reverse_compare));
+        // With reverse comparator, 5 should move up since 5 > 3
+
+        let mut arr_rev2 = vec![1, 3, 4, 2, 5];
+        let mut idx7 = 0;
+        assert!(single_downward(&mut arr_rev2, &mut idx7, reverse_compare));
+        // With reverse comparator, we want larger elements as children
+    }
+
+    #[test]
+    fn test_comprehensive_heap_operations() {
+        // Test heapify with various input patterns
+        let mut arr1: Vec<i32> = vec![]; // Empty
+        heapify(&mut arr1, default_compare);
+        assert!(is_heap(&arr1, default_compare));
+
+        let mut arr2 = vec![1]; // Single element
+        heapify(&mut arr2, default_compare);
+        assert!(is_heap(&arr2, default_compare));
+
+        let mut arr3 = vec![1, 2]; // Two elements
+        heapify(&mut arr3, default_compare);
+        assert!(is_heap(&arr3, default_compare));
+
+        let mut arr4 = vec![5, 4, 3, 2, 1]; // Reverse sorted
+        heapify(&mut arr4, default_compare);
+        assert!(is_heap(&arr4, default_compare));
+
+        let mut arr5 = vec![1, 1, 1, 1, 1]; // All equal
+        heapify(&mut arr5, default_compare);
+        assert!(is_heap(&arr5, default_compare));
+
+        // Test heap_pushpop edge cases
+        let mut empty: Vec<i32> = vec![];
+        let result = heap_pushpop(&mut empty, 5, default_compare);
+        assert_eq!(result, 5);
+        assert!(empty.is_empty());
+
+        let mut single = vec![3];
+        let result = heap_pushpop(&mut single, 1, default_compare);
+        assert_eq!(result, 1);
+        assert_eq!(single, vec![3]);
+
+        let result = heap_pushpop(&mut single, 5, default_compare);
+        assert_eq!(result, 3);
+        assert_eq!(single, vec![5]);
+    }
 }
