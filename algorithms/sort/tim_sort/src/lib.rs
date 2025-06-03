@@ -5,7 +5,7 @@
 
 use std::alloc::{Layout, alloc, dealloc};
 use std::collections::VecDeque;
-use std::ptr::{read, write};
+use std::ptr::{copy_nonoverlapping, read, write};
 
 type Run = (usize, usize);
 
@@ -209,14 +209,81 @@ fn is_run_gt(r1: &Run, r2: &Run) -> bool {
 
 // merge two adjacent run
 // memory optimization is not applied
-fn merge_two_run<T, F>(slice: &mut [T], mut comp: F, merge_buffer: *mut T, run1: Run, run2: Run) {
-    todo!();
+fn merge_two_run<T, F>(
+    slice: &mut [T],
+    mut comp: F,
+    merge_buffer: *mut T,
+    mut run1: Run,
+    mut run2: Run,
+) where
+    F: FnMut(&T, &T) -> std::cmp::Ordering,
+{
     // find merge area using binary search
-    // partition point, find left point
-    // partition point, find right point
+    run1.0 = slice[run1.0..run1.1].partition_point(|x| comp(x, &slice[run2.0]).is_le()) + run1.0;
+    run2.1 =
+        slice[run2.0..run2.1].partition_point(|x| comp(x, &slice[run1.1 - 1]).is_lt()) + run2.0;
 
     // galloping mode
+    let mut streak_cnt_1 = 0;
+    let mut streak_cnt_2 = 0;
+    let mut stride = 1;
+
+    // merge
+    let mut i = run1.0;
+    let mut j = run2.0;
+    let mut k = run1.0;
+    while k < run2.1 {
+        if streak_cnt_1 >= 3 {
+            todo!();
+            //galloping_mode(slice, &mut comp, merge_buffer, run1, j, &mut i);
+        } else if streak_cnt_2 >= 3 {
+            todo!();
+            //galloping_mode(slice, &mut comp, merge_buffer, run2, i, &mut j);
+        } else {
+            // normal mode
+            if j == run2.1 || comp(&slice[i], &slice[j]).is_le() {
+                unsafe {
+                    merge_buffer.add(k).write((&slice[i] as *const T).read());
+                }
+                i += 1;
+                //streak_cnt_1 += 1;
+                //streak_cnt_2 = 0;
+            } else {
+                unsafe {
+                    merge_buffer.add(k).write((&slice[j] as *const T).read());
+                }
+                j += 1;
+                //streak_cnt_1 = 0;
+                //streak_cnt_2 += 1;
+            }
+        }
+        k += 1;
+    }
+    // no left over
+
+    // update at once
+    unsafe {
+        copy_nonoverlapping(
+            merge_buffer.add(run1.0),
+            &mut slice[run1.0] as *mut T,
+            run2.1 - run1.0,
+        );
+    }
 }
+
+/*
+fn galloping_mode<T, F>(
+    slice: &mut [T],
+    mut comp: F,
+    merge_buffer: *mut T,
+    mut run: Run,
+    target_idx: usize,
+    gallop_idx: &mut usize,
+) where
+    F: FnMut(&T, &T) -> std::cmp::Ordering,
+{
+}
+*/
 
 #[cfg(test)]
 mod tests {
@@ -271,7 +338,59 @@ mod tests {
     }
 
     #[test]
-    fn test_tim_sort_by() {
+    fn test_merge_two_run() {
+        let mut merge_buffer: Vec<i32> = Vec::with_capacity(9);
+        let mut slice = [-9, 0, 2, 3, 8, 1, 4, 5, 44];
+        merge_two_run(
+            &mut slice,
+            i32::cmp,
+            merge_buffer.as_mut_ptr(),
+            (0, 5),
+            (5, 9),
+        );
+        assert_eq!(slice, [-9, 0, 1, 2, 3, 4, 5, 8, 44]);
+    }
+
+    #[test]
+    fn test_merge_two_run_one_off_error() {
+        let mut merge_buffer: Vec<i32> = Vec::with_capacity(9);
+        let mut slice = [55, 0, 1, 2, 3, 4, 5, 6, 99];
+        merge_two_run(
+            &mut slice,
+            i32::cmp,
+            merge_buffer.as_mut_ptr(),
+            (0, 1),
+            (1, 9),
+        );
+        assert_eq!(slice, [0, 1, 2, 3, 4, 5, 6, 55, 99]);
+
+        let mut slice = [0, 1, 2, 3, 4, 5, 6, 99, -33];
+        merge_two_run(
+            &mut slice,
+            i32::cmp,
+            merge_buffer.as_mut_ptr(),
+            (0, 8),
+            (8, 9),
+        );
+        assert_eq!(slice, [-33, 0, 1, 2, 3, 4, 5, 6, 99]);
+    }
+
+    #[test]
+    fn test_tim_sort_by_small() {
+        let seed: u64 = 42;
+        let rng = StdRng::seed_from_u64(seed);
+
+        let mut vec: Vec<i32> = rng.sample_iter(StandardUniform).take(53).collect();
+
+        println!("Before sort : {:?}", vec);
+        tim_sort_by(&mut vec, |a: &i32, b: &i32| Reverse(a).cmp(&Reverse(b)));
+
+        println!("After sort : {:?}", vec);
+        assert!(vec.is_sorted_by(|&a, &b| { a > b }));
+    }
+
+    #[test]
+    fn test_tim_sort_by_big() {
         let seed: u64 = 42;
         let rng = StdRng::seed_from_u64(seed);
 
@@ -280,5 +399,19 @@ mod tests {
         tim_sort_by(&mut vec, |a: &i32, b: &i32| Reverse(a).cmp(&Reverse(b)));
 
         assert!(vec.is_sorted_by(|&a, &b| { a > b }));
+    }
+
+    #[test]
+    fn test_tim_sort_by_stable() {
+        let mut str_slice = ["hahah", "heh", "a", "aa", "b", "c", "dddddd", "aa"];
+
+        tim_sort_by(&mut str_slice, |str1, str2| {
+            usize::cmp(&str1.len(), &str2.len())
+        });
+
+        assert_eq!(
+            str_slice,
+            ["a", "b", "c", "aa", "aa", "heh", "hahah", "dddddd"]
+        );
     }
 }
