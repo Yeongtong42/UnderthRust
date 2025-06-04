@@ -440,6 +440,27 @@ mod tests {
     }
 
     #[test]
+    fn test_galloping_count() {
+        let mut slice = [7, 1, 2, 3, 4, 5, 6, 7, 7, 8, 8, 9, 10, 8];
+
+        // search left run
+        assert_eq!(
+            galloping_count(&mut slice, 0, 1, 13, |r1, target| {
+                i32::cmp(r1, target).is_le()
+            }),
+            8 // 1, 2, 3, 4, 5, 6, 7, 7 -> 8ea
+        );
+
+        // right run
+        assert_eq!(
+            galloping_count(&mut slice, 13, 1, 13, |r2, target| {
+                i32::cmp(r2, target).is_lt()
+            }),
+            8 // 1, 2, 3, 4, 5, 6, 7, 7 -> 8ea
+        );
+    }
+
+    #[test]
     fn test_merge_two_run() {
         let mut merge_buffer: Vec<i32> = Vec::with_capacity(9);
         let mut slice = [-9, 0, 2, 3, 8, 1, 4, 5, 44];
