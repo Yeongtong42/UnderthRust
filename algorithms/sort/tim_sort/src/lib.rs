@@ -1,18 +1,57 @@
 //! # Description
 //! Implementation of tim sort.
-
-#![allow(unused)]
-
-use std::alloc::{Layout, alloc, dealloc};
 use std::collections::VecDeque;
-use std::ptr::{copy_nonoverlapping, read, write};
+use std::ptr::copy_nonoverlapping;
 
 type Run = (usize, usize);
 
+/// # Description
+/// Sorts the given slice stable using a Tim‑sort algorithm.
+///
+/// # Type Parameters
+/// - `T`: The element type. Must implement `Ord`.
+///
+/// # Parameters
+/// - `slice`: The mutable slice to sort.
+///
+/// # Panics
+/// Panics if calculating partition indices overflows (only for very large slices).
+/// Panics if the implementation of Ord panics.
+///
+/// # Examples
+/// ```
+/// use tim_sort::tim_sort;
+/// let mut v = vec![3, 1, 4, 1, 5];
+/// tim_sort(&mut v);
+/// assert_eq!(v, vec![1, 1, 3, 4, 5]);
+/// ```
 pub fn tim_sort<T: Ord>(slice: &mut [T]) {
     tim_sort_by(slice, T::cmp)
 }
 
+/// # Description
+/// Sorts the given slice stable using Tim‑sort algorithm
+/// whith comparator.
+///
+/// # Type Parameters
+/// - `T`: The element type.
+/// - `F`: The comparator type. Must implement 'FnMut' trait.
+///
+/// # Parameters
+/// - `slice`: The mutable slice to sort.
+/// - `comp`: The callable object to compare two &T data.
+///
+/// # Panics
+/// Panics if calculating partition indices overflows (only for very large slices).
+/// Panics if the implementation of 'comp' panics.
+///
+/// # Examples
+/// ```
+/// use tim_sort::tim_sort_by;
+/// let mut v = vec![3, 1, 4, 1, 5];
+/// tim_sort_by(&mut v, |a : &i32, b : &i32|{ a.cmp(b) });
+/// assert_eq!(v, vec![1, 1, 3, 4, 5]);
+/// ```
 pub fn tim_sort_by<T, F>(slice: &mut [T], mut compare: F)
 where
     F: FnMut(&T, &T) -> std::cmp::Ordering,
@@ -73,8 +112,12 @@ where
     }
 }
 
-/// min_run = min(n, 32~64)
+/// # Description
+/// Calculate minimum size of run and maximum count of run in the slice.
+/// Run is a seperated slice to be merged, will be sorted by insertion sort.
 ///
+/// # Parameters
+/// - `n` : size of the slice to be sorted.
 fn get_min_run_size(n: usize) -> (usize, usize) {
     let mut min_run_size = n;
     while min_run_size > 64 {
@@ -84,8 +127,9 @@ fn get_min_run_size(n: usize) -> (usize, usize) {
     (min_run_size, max_run_cnt)
 }
 
-// sort min run and append
-// return end pos of processed run
+/// # Description
+/// Sort minimum sized run and append it's size if possible.
+/// This function returns end position of sorted and appended run.
 fn get_sorted_run_from_slice<T, F>(
     slice: &mut [T],
     mut compare: F,
@@ -131,9 +175,10 @@ where
     run_end_pos
 }
 
-/// insertion sort with binary search
-/// use std::slice::partition_point to search insertion point
-/// partition_point method use binary_search like algorithm
+/// # Description
+/// Implementation of Insertion sort with binary search.
+/// Use std::slice::partition_point to search insertion point.
+/// The partition_point method use binary_search like algorithm.
 fn binary_insertion_sort_by<T, F>(slice: &mut [T], mut comp: F, is_inc: bool)
 where
     F: FnMut(&T, &T) -> std::cmp::Ordering,
@@ -150,7 +195,25 @@ where
     }
 }
 
-// update run_stack
+/// # Description
+/// Update run_stack to merge two similar sized run.
+/// Merging different size of run makes merging ineffective.
+/// By using stack, and keeping invariant of run_stack, the algorithm can merge two similar sized run effectively.
+///
+/// # Invariant
+/// Lets say A, B, C are top three run of the run_stack.
+///
+/// ```let A = run_stack[-1];```
+///
+/// ```let B = run_stack[-2];```
+///
+/// ```let C = run_stack[-3];```
+///
+/// By using this function, the algorithm keep next two invariant.
+/// ## 1. size of two
+/// |A| < |B|
+/// ## 2. size of three
+/// |A| + |B| < |C|
 fn keep_run_stack_invariant<T, F>(
     slice: &mut [T],
     mut compare: F,
@@ -188,6 +251,8 @@ fn keep_run_stack_invariant<T, F>(
     }
 }
 
+/// # Description
+/// Check if the run_stack keeps it's invariant.
 fn is_run_stack_ok(run_stack: &mut VecDeque<Run>) -> bool {
     let size = run_stack.len();
     if size < 3 {
@@ -203,12 +268,15 @@ fn is_run_stack_ok(run_stack: &mut VecDeque<Run>) -> bool {
     return first < second && (first + second) < third;
 }
 
+/// # Description
+/// Returns true if |run1| > |run2|
 fn is_run_gt(r1: &Run, r2: &Run) -> bool {
     (r1.1 - r1.0) > (r2.1 - r2.0)
 }
 
-// merge two adjacent run
-// memory optimization is not applied
+/// # Description
+/// Merge two adjacent run.
+/// Memory optimization is not applied because of panic safety.
 fn merge_two_run<T, F>(
     slice: &mut [T],
     mut comp: F,
@@ -235,11 +303,15 @@ fn merge_two_run<T, F>(
         let mut copy_cnt = 1usize;
         if j == run2.1 || comp(&slice[i], &slice[j]).is_le() {
             if j == run2.1 {
+                // left over, no need to compare.
                 copy_cnt = run1.1 - i;
             } else if streak_cnt_1 >= 3 {
+                // galloping mode
+                // use is_le to keep stableness.
                 copy_cnt =
                     galloping_count(slice, j, i, run1.1, |r1, target| comp(r1, target).is_le());
             } else {
+                // one-pair-at-a-time mode
                 streak_cnt_1 += 1;
             }
             unsafe {
@@ -250,11 +322,15 @@ fn merge_two_run<T, F>(
             i += copy_cnt;
         } else {
             if i == run1.1 {
+                // left over, no need to compare.
                 copy_cnt = run2.1 - j;
             } else if streak_cnt_2 >= 3 {
+                // galloping mode
+                // use is_lt to keep stableness.
                 copy_cnt =
                     galloping_count(slice, i, j, run2.1, |r2, target| comp(r2, target).is_lt());
             } else {
+                // one-pair-at-a-time mode
                 streak_cnt_2 += 1;
             }
             unsafe {
@@ -278,6 +354,13 @@ fn merge_two_run<T, F>(
     }
 }
 
+/// # Description
+/// Count number of item in a run which is ok by the pred in a galloping mode.
+/// By doubling the stride, the algorithm can count much faster.
+///
+/// # Attention
+/// If the run to be searched is left side, use is_le as pred to keep the stableness of the algorithm.
+/// If the run to be searched is right side, use is_lt as pred to keep the stableness of the algorithm.
 fn galloping_count<T, F>(
     slice: &mut [T],
     target_idx: usize,
