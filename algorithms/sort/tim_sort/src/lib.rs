@@ -224,40 +224,47 @@ fn merge_two_run<T, F>(
         slice[run2.0..run2.1].partition_point(|x| comp(x, &slice[run1.1 - 1]).is_lt()) + run2.0;
 
     // galloping mode
-    let mut streak_cnt_1 = 0;
-    let mut streak_cnt_2 = 0;
-    let mut stride = 1;
+    let mut streak_cnt_1 = 0u32;
+    let mut streak_cnt_2 = 0u32;
 
     // merge
     let mut i = run1.0;
     let mut j = run2.0;
     let mut k = run1.0;
     while k < run2.1 {
-        if streak_cnt_1 >= 3 {
-            todo!();
-            //galloping_mode(slice, &mut comp, merge_buffer, run1, j, &mut i);
-        } else if streak_cnt_2 >= 3 {
-            todo!();
-            //galloping_mode(slice, &mut comp, merge_buffer, run2, i, &mut j);
-        } else {
-            // normal mode
-            if j == run2.1 || comp(&slice[i], &slice[j]).is_le() {
-                unsafe {
-                    merge_buffer.add(k).write((&slice[i] as *const T).read());
-                }
-                i += 1;
-                //streak_cnt_1 += 1;
-                //streak_cnt_2 = 0;
+        let mut copy_cnt = 1usize;
+        if j == run2.1 || comp(&slice[i], &slice[j]).is_le() {
+            if j == run2.1 {
+                copy_cnt = run1.1 - i;
+            } else if streak_cnt_1 >= 3 {
+                copy_cnt =
+                    galloping_count(slice, j, i, run1.1, |r1, target| comp(r1, target).is_le());
             } else {
-                unsafe {
-                    merge_buffer.add(k).write((&slice[j] as *const T).read());
-                }
-                j += 1;
-                //streak_cnt_1 = 0;
-                //streak_cnt_2 += 1;
+                streak_cnt_1 += 1;
             }
+            unsafe {
+                // from slice to merge buffer
+                copy_nonoverlapping(&mut slice[i] as *mut T, merge_buffer.add(k), copy_cnt);
+            }
+            streak_cnt_2 = 0;
+            i += copy_cnt;
+        } else {
+            if i == run1.1 {
+                copy_cnt = run2.1 - j;
+            } else if streak_cnt_2 >= 3 {
+                copy_cnt =
+                    galloping_count(slice, i, j, run2.1, |r2, target| comp(r2, target).is_lt());
+            } else {
+                streak_cnt_2 += 1;
+            }
+            unsafe {
+                // from slice to merge buffer
+                copy_nonoverlapping(&mut slice[j] as *mut T, merge_buffer.add(k), copy_cnt);
+            }
+            streak_cnt_1 = 0;
+            j += copy_cnt;
         }
-        k += 1;
+        k += copy_cnt;
     }
     // no left over
 
@@ -271,19 +278,31 @@ fn merge_two_run<T, F>(
     }
 }
 
-/*
-fn galloping_mode<T, F>(
+fn galloping_count<T, F>(
     slice: &mut [T],
-    mut comp: F,
-    merge_buffer: *mut T,
-    mut run: Run,
     target_idx: usize,
-    gallop_idx: &mut usize,
-) where
-    F: FnMut(&T, &T) -> std::cmp::Ordering,
+    start_idx: usize,
+    run_limit: usize,
+    mut pred: F,
+) -> usize
+where
+    F: FnMut(&T, &T) -> bool,
 {
+    let mut stride = 1usize;
+    let mut prev_idx = start_idx;
+    let mut cur_idx = start_idx + stride;
+    // galloping
+    while cur_idx < run_limit && pred(&slice[cur_idx], &slice[target_idx]) {
+        stride <<= 1;
+        prev_idx = cur_idx;
+        cur_idx = start_idx + stride;
+    }
+    cur_idx = cur_idx.min(run_limit);
+
+    // binary search range
+    cur_idx = &slice[prev_idx..cur_idx].partition_point(|x| pred(x, &slice[target_idx])) + prev_idx;
+    cur_idx - start_idx
 }
-*/
 
 #[cfg(test)]
 mod tests {
@@ -376,6 +395,25 @@ mod tests {
     }
 
     #[test]
+    fn test_merge_two_run_stable() {
+        let mut merge_buffer: Vec<&str> = Vec::with_capacity(8);
+        let mut str_slice = ["a", "dd", "heh", "hahah", "b", "c", "aa", "dddddd"];
+
+        merge_two_run(
+            &mut str_slice,
+            |str1, str2| usize::cmp(&str1.len(), &str2.len()),
+            merge_buffer.as_mut_ptr(),
+            (0, 4),
+            (4, 8),
+        );
+
+        assert_eq!(
+            str_slice,
+            ["a", "b", "c", "dd", "aa", "heh", "hahah", "dddddd"]
+        );
+    }
+
+    #[test]
     fn test_tim_sort_by_small() {
         let seed: u64 = 42;
         let rng = StdRng::seed_from_u64(seed);
@@ -413,5 +451,21 @@ mod tests {
             str_slice,
             ["a", "b", "c", "aa", "aa", "heh", "hahah", "dddddd"]
         );
+    }
+
+    #[test]
+    fn test_tim_sort_by_string() {
+        let seed: u64 = 42;
+        let rng = StdRng::seed_from_u64(seed);
+
+        let mut vec: Vec<String> = rng
+            .sample_iter(StandardUniform)
+            .take(TEST_SIZE)
+            .map(|n: i32| n.to_string())
+            .collect();
+
+        tim_sort(&mut vec);
+
+        assert!(vec.is_sorted());
     }
 }
