@@ -170,7 +170,7 @@ pub trait TryCountingSort {
 pub trait CountingSortByKey<T> {
     fn counting_sort_by_key<F>(self, key_fn: F)
     where
-        F: Fn(&T) -> usize;
+        F: FnMut(&T) -> usize;
 }
 
 /// CountingSortByKeyCached trait은 Sized 타입 T에 대해서 &mut [T]에 autoimplement됩니다.
@@ -185,7 +185,7 @@ pub trait CountingSortByKey<T> {
 pub trait CountingSortByKeyCached<T> {
     fn counting_sort_by_key_cached<F>(self, key_fn: F)
     where
-        F: Fn(&T) -> usize;
+        F: FnMut(&T) -> usize;
 }
 
 /// 에러 타입을 사용하지 않는 연산의 오류 채널을 위한 빈 열거형입니다.
@@ -323,14 +323,15 @@ where
             accumulated_counter2permutation(&mut counter, it, self.len())?
         };
 
-        Ok(apply_permutation_copy(self, &perm))
+        apply_permutation_copy(self, &perm);
+        Ok(())
     }
 }
 
 impl<T> CountingSortByKey<T> for &mut [T] {
-    fn counting_sort_by_key<F>(self, key_fn: F)
+    fn counting_sort_by_key<F>(self, mut key_fn: F)
     where
-        F: Fn(&T) -> usize,
+        F: FnMut(&T) -> usize,
     {
         if self.len() <= 1 {
             return;
@@ -353,7 +354,7 @@ impl<T> CountingSortByKey<T> for &mut [T] {
 impl<T> CountingSortByKeyCached<T> for &mut [T] {
     fn counting_sort_by_key_cached<F>(self, key_fn: F)
     where
-        F: Fn(&T) -> usize,
+        F: FnMut(&T) -> usize,
     {
         if self.len() <= 1 {
             return;
