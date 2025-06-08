@@ -72,7 +72,7 @@ where
     if slice.len() < 16 {
         return insertion_sort_by(slice, comp);
     } else if max_depth == 0 {
-        return max_heap::heapsort_by(slice, comp);
+        return max_heap::heap_sort_by(slice, comp);
     }
 
     // quick sort

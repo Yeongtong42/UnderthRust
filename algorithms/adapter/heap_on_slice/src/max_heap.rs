@@ -22,7 +22,7 @@
 //! - [`adjust_heap`]: 특정 위치의 heap property 복구
 //!
 //! ### 정렬
-//! - [`heapsort`]: in-place 오름차순 정렬 (내림차순 정렬은 [`min_heap::heap_reverse_sort`](crate::min_heap::heap_reverse_sort) 사용)
+//! - [`heap_sort`]: in-place 오름차순 정렬 (내림차순 정렬은 [`min_heap::heap_reverse_sort`](crate::min_heap::heap_reverse_sort) 사용)
 //!
 //! ## 사용 예시
 //!
@@ -48,7 +48,7 @@
 //! }
 //!
 //! // 정렬
-//! heapsort(&mut arr);
+//! heap_sort(&mut arr);
 //! // arr는 이제 오름차순으로 정렬됨
 //! ```
 //!
@@ -376,31 +376,31 @@ where
 
 /// slice를 in-place로 오름차순 정렬합니다.
 ///
-/// Heapsort algorithm을 사용하여 slice를 정렬합니다. Max heap의 특성상
+/// Heap_sort algorithm을 사용하여 slice를 정렬합니다. Max heap의 특성상
 /// 결과는 오름차순으로 정렬됩니다.
 /// 내림차순 정렬을 원하는 경우 [`min_heap::heap_reverse_sort`](crate::min_heap::heap_reverse_sort)를 사용하세요.
 ///
 /// # 시간 복잡도
 ///
-/// O(n log n) - 표준적인 heapsort의 시간 복잡도입니다.
+/// O(n log n) - 표준적인 heap_sort의 시간 복잡도입니다.
 ///
 /// # Examples
 ///
 /// ```rust
-/// use heap_on_slice::max_heap::heapsort;
+/// use heap_on_slice::max_heap::heap_sort;
 ///
 /// let mut arr = vec![3, 1, 4, 1, 5];
-/// heapsort(&mut arr);
+/// heap_sort(&mut arr);
 /// assert_eq!(arr, vec![1, 1, 3, 4, 5]); // 오름차순 정렬
 /// ```
-pub fn heapsort<T: Ord>(arr: &mut [T]) {
+pub fn heap_sort<T: Ord>(arr: &mut [T]) {
     Impl::heap_reverse_sort(arr, reversed_cmp);
 }
 
 /// 사용자 정의 comparator로 heap sort를 수행합니다.
 ///
-/// [`heapsort`]와 동일한 기능을 하지만 `Ord::cmp` 대신 `compare` 함수를 인자로 받습니다.
-pub fn heapsort_by<T, F>(arr: &mut [T], compare: F)
+/// [`heap_sort`]와 동일한 기능을 하지만 `Ord::cmp` 대신 `compare` 함수를 인자로 받습니다.
+pub fn heap_sort_by<T, F>(arr: &mut [T], compare: F)
 where
     F: FnMut(&T, &T) -> Ordering,
 {
@@ -409,8 +409,8 @@ where
 
 /// key extraction 함수로 heap sort를 수행합니다.
 ///
-/// [`heapsort`]와 동일한 기능을 하지만 원소 비교 시 `key` 함수로 추출한 값을 사용합니다.
-pub fn heapsort_by_key<T, K, F>(arr: &mut [T], key: F)
+/// [`heap_sort`]와 동일한 기능을 하지만 원소 비교 시 `key` 함수로 추출한 값을 사용합니다.
+pub fn heap_sort_by_key<T, K, F>(arr: &mut [T], key: F)
 where
     K: Ord,
     F: FnMut(&T) -> K,
@@ -760,40 +760,40 @@ mod unit_test {
     }
 
     #[test]
-    fn test_heapsort() {
+    fn test_heap_sort() {
         let mut arr = vec![3, 1, 4, 2, 5];
-        heapsort(&mut arr);
+        heap_sort(&mut arr);
 
         // Should be sorted in ascending order (reverse of max heap sort)
         assert_eq!(arr, vec![1, 2, 3, 4, 5]);
 
         // Test with already sorted array
         let mut sorted = vec![1, 2, 3, 4, 5];
-        heapsort(&mut sorted);
+        heap_sort(&mut sorted);
         assert_eq!(sorted, vec![1, 2, 3, 4, 5]);
 
         // Test with empty array
         let mut empty: Vec<i32> = vec![];
-        heapsort(&mut empty);
+        heap_sort(&mut empty);
         assert!(empty.is_empty());
 
         // Test with single element
         let mut single = vec![42];
-        heapsort(&mut single);
+        heap_sort(&mut single);
         assert_eq!(single, vec![42]);
     }
 
     #[test]
-    fn test_heapsort_by() {
+    fn test_heap_sort_by() {
         let mut arr = vec![3, 1, 4, 2, 5];
-        heapsort_by(&mut arr, reverse_compare);
+        heap_sort_by(&mut arr, reverse_compare);
 
         // With reverse comparator, should sort in descending order
         assert_eq!(arr, vec![5, 4, 3, 2, 1]);
     }
 
     #[test]
-    fn test_heapsort_by_key() {
+    fn test_heap_sort_by_key() {
         let mut people = vec![
             Person {
                 name: "Alice".to_string(),
@@ -813,7 +813,7 @@ mod unit_test {
             },
         ];
 
-        heapsort_by_key(&mut people, |p| p.age);
+        heap_sort_by_key(&mut people, |p| p.age);
 
         // Should be sorted by age in ascending order
         let ages: Vec<u32> = people.iter().map(|p| p.age).collect();
