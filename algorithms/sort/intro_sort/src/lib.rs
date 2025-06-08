@@ -1,10 +1,8 @@
 //! # Description
 //! Implementation of intro-sort algorithm.
-use heap_on_slice::Comparator;
-use heap_on_slice::max_heap::MaxHeap;
+use heap_on_slice::max_heap;
 use insertion_sort::insertion_sort_by;
 use quick_sort::ternary_partition_by;
-use std::cell::RefCell;
 
 /// # Description
 /// Sorts the given slice in-place using a intro‑sort algorithm.
@@ -67,19 +65,6 @@ where
     intro_recurse_sort_by(slice, &mut comp, max_depth);
 }
 
-struct ComparatorBy<'a, F> {
-    comp_by: RefCell<&'a mut F>,
-}
-
-impl<'a, T, F> Comparator<T> for ComparatorBy<'a, F>
-where
-    F: FnMut(&T, &T) -> std::cmp::Ordering,
-{
-    fn cmp(&self, a: &T, b: &T) -> std::cmp::Ordering {
-        self.comp_by.borrow_mut()(a, b)
-    }
-}
-
 fn intro_recurse_sort_by<T, F>(slice: &mut [T], comp: &mut F, max_depth: u32)
 where
     F: FnMut(&T, &T) -> std::cmp::Ordering,
@@ -87,10 +72,7 @@ where
     if slice.len() < 16 {
         return insertion_sort_by(slice, comp);
     } else if max_depth == 0 {
-        return ComparatorBy {
-            comp_by: RefCell::new(comp),
-        }
-        .heap_sort(slice);
+        return max_heap::heapsort_by(slice, comp);
     }
 
     // quick sort
