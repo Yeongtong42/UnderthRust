@@ -269,7 +269,7 @@ where
 {
     let cloned_src = src.to_vec();
     for idx in 0..src.len() {
-        src[perm[idx]] = cloned_src[idx].clone();
+        src[perm[idx]] = cloned_src[idx];
     }
 }
 
