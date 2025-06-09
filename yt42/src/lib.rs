@@ -6,14 +6,11 @@ pub mod algorithms {
         pub use heap_on_slice;
     }
     pub mod sort {
-        pub mod counting_sort {
-            pub use counting_sort;
-            pub use radix_sort;
-        }
+        pub use counting_sort;
+        pub use insertion_sort;
+        pub use intro_sort;
+        pub use merge_sort;
+        pub use quick_sort;
+        pub use radix_sort;
     }
-	pub mod sort {
-		pub use insertion_sort::*;
-		pub use merge_sort::*;
-		pub use quick_sort::*;
-	}
 }

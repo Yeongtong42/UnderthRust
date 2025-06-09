@@ -1,70 +1,52 @@
-//! # Heap on Slice
-//! `slice`에 이진 힙기능을 제공하는 모듈.
-//! BinaryHeap과 같은 컨테이너를 제공하는 것이 아닌, slice에 binary heap operation을 제공하는 모듈이다.
-//! 따라서 이 모듈은 다음과 같은 시나리오에 적합하다.
-//! * BinaryHeap과 같은 컨테이너에 데이터를 복사하지 않고, slice에 직접 이진힙 기능을 사용해 최적화 이득을 보고자 하는 경우
-//! * 커스텀 기능이 있는 이진힙을 구현하고자 하는 경우
+//! # heap_on_slice
 //!
-//! # heap_on_slice module features
-//! 이진힙은 이진트리의 일종으로, 각 노드가 자식노드보다 작거나(MinHeap) 같은 값을 가지는 트리이다.
-//! 이진힙은 완전이진트리이므로, 배열로 구현할 수 있다.
-//! `heap_on_slice` 모듈은 다음과 같은 기능을 제공한다.
-//! * `Comparator` trait implementation을 통해 비교함수 선택가능. 이를 통해 동일한 타입에 대해서도 서로다른 비교함수를 사용하여 이진힙을 구성할 수 있다.
-//! * `DefaultComparator`와 `ReverseComparator`를 제공하여, Ord trait을 구현한 타입에 대해 기본적으로 제공되는 Comparator implementation을 제공한다.
-//! * Instance dependent comparator에 대한 확장성이 제공된다, 예를 들어,
-//! ```
-//! use heap_on_slice::{*, min_heap::MinHeap};
-//! struct AbstractDistance {
-//!     center: i32,
-//! }
-//! impl Comparator<i32> for AbstractDistance {
-//!     fn cmp(&self, a: &i32, b: &i32) -> std::cmp::Ordering {
-//!        Ord::cmp(&a.abs_diff(self.center), &b.abs_diff(self.center))
-//!     }
-//! }
-//! let comp = AbstractDistance { center: 3 };
-//! let mut slice = vec![1, 2, 3, 4, 5];
-//! comp.heapify(&mut slice);
-//! ```
-//! 와 같이 인스턴스의 값에 의존하는 비교함수를 구현할 수 있으며, enum 또는 struct를 통해 다양한 비교함수를 구현할 수 있다.
-//! * 비교함수에 대한 `MinHeap`과 `MaxHeap`을 모두 지원. `MinHeap`은 작은 값이 루트에 위치하고, `MaxHeap`은 큰 값이 루트에 위치한다.
-//! * slice에 우선순위 큐 기능을 제공하는 메서드 제공. 이를 통해 우선순위 큐를 쉽게 구현할 수 있다.
-//! * slice에 heap property를 보존할 수 있는 action 메서드 제공. 이를 통해 우선순위 큐 구현시 increase/decrease key를 쉽게 구현할 수 있다.
-//! * slice에 in-place로 정렬하는 메서드 제공.
-//! * 아주 적은 trait bound를 요구함. slice의 원소는 Copy, Clone, Default, Ord등을 implement하지 않아도 사용가능. Comparator object만 정의하면 즉시 사용 가능함.
+//! `&mut [T]` slice에 대한 in-place binary heap 연산을 제공하는 라이브러리입니다.
 //!
-//! # Trait Namespace Collision
-//! `MaxHeap` trait과 `MinHeap` trait은 같은 이름의 메서드를 제공하므로, 두 trait을 모두 use하는 경우 method를 구분하기 위해 명시적으로 trait을 지정해야 하는 불편함이 발생할 수 있음.
-//! 예를 들어, `MinHeap` trait을 사용하고자 하는 경우,
+//! 이 crate는 별도의 heap 자료구조를 생성하지 않고, 기존 slice의 메모리 영역을
+//! 그대로 활용하여 heap 연산을 수행합니다. 표준 라이브러리의 [`BinaryHeap`]과
+//! 달리 메모리 할당을 하지 않으며, slice의 고정된 크기 내에서만 동작합니다.
+//!
+//! [`BinaryHeap`]: std::collections::BinaryHeap
+//!
+//! ## 모듈 구성
+//!
+//! - [`min_heap`]: minimum heap 연산을 제공합니다. 가장 작은 원소가 root에 위치하며, [`heap_reverse_sort`](min_heap::heap_reverse_sort)로 내림차순 정렬을 지원합니다.
+//! - [`max_heap`]: maximum heap 연산을 제공합니다. 가장 큰 원소가 root에 위치하며, [`heapsort`](max_heap::heapsort)로 오름차순 정렬을 지원합니다.
+//!
+//! ## 사용법
+//!
+//! 네임스페이스 충돌을 방지하기 위해 `min_heap` 또는 `max_heap` 중 하나만 사용하는 것을 권장합니다:
+//!
+//! ```rust
+//! use heap_on_slice::min_heap::*;
+//!
+//! let mut arr = vec![3, 1, 4, 1, 5];
+//! heapify(&mut arr);
+//! assert!(is_heap(&arr));
 //! ```
-//! use heap_on_slice::{*, min_heap::MinHeap};
-//! let comp = ReverseComparator;
-//! let mut slice = vec![1, 2, 3, 4, 5];
-//! comp.heapify(&mut slice);
+//!
+//! 두 모듈을 모두 사용해야 하는 경우, 명시적으로 모듈 이름을 지정하세요:
+//!
+//! ```rust
+//! use heap_on_slice::{min_heap, max_heap};
+//!
+//! let mut min_data = vec![3, 1, 4, 1, 5];
+//! min_heap::heapify(&mut min_data);
+//! assert!(min_heap::is_heap(&min_data));
+//!
+//! let mut max_data = vec![3, 1, 4, 1, 5];
+//! max_heap::heapify(&mut max_data);
+//! assert!(max_heap::is_heap(&max_data));
 //! ```
-//! `MaxHeap` trait을 사용하고자 하는 경우,
-//! ```
-//! use heap_on_slice::{*, max_heap::MaxHeap};
-//! let comp = DefaultComparator;
-//! let mut slice = vec![1, 2, 3, 4, 5];
-//! comp.heapify(&mut slice);
-//! ```
-//! 와 같이 둘 중 하나를 선택해야 하며, 두 trait을 모두 사용하고자 하는 경우,
-//! ```
-//! use heap_on_slice::{*, min_heap::MinHeap, max_heap::MaxHeap};
-//! let comp = DefaultComparator;
-//! let mut slice = vec![1, 2, 3, 4, 5];
-//! // comp.heapify(&mut slice); // Fails to compile due to ambiguity
-//! MaxHeap::heapify(&comp, &mut slice);
-//! MinHeap::heapify(&comp, &mut slice);
-//! ```
-//! 와 같이 명시적으로 trait을 지정해야 한다.
-
-pub mod comparator;
-pub use comparator::*;
+//!
+//! ## 주요 특징
+//!
+//! - **Zero-allocation**: 추가 메모리 할당 없이 기존 slice에서 동작
+//! - **In-place 연산**: 원본 데이터를 직접 수정하여 공간 효율성 극대화
+//! - **Custom comparator 지원**: 사용자 정의 비교 함수 및 key extraction 함수 지원
+//! - **Type-safe**: 컴파일 타임에 타입 안전성 보장
 
 mod heap_implementation;
-use heap_implementation::*;
 
 pub mod max_heap;
 pub mod min_heap;

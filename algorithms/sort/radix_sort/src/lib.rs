@@ -82,7 +82,7 @@
 //!     }));
 //! }
 //!
-//! let scheme = SerialScheme::new(&projections);
+//! let scheme = SerialScheme::new(&mut projections);
 //! data.as_mut_slice().radix_sort(scheme);
 //! // data는 이제 사전순으로 정렬된 상태입니다:
 //! // ["", "app", "apple", "apricot", "banana", "bananaaa"]
@@ -94,7 +94,7 @@ use counting_sort::CountingSortByKey;
 /// Counting Sort를 사용하여 Radix Sort를 구현하는 trait
 /// 인터페이스를 통합하기 위해 정의된 trait입니다.
 pub trait RadixScheme<T> {
-    fn sort(&self, slice: &mut [T]);
+    fn sort(&mut self, slice: &mut [T]);
 }
 
 /// 서로다른 type의 projection tuple에 대해 RadixScheme trait을 구현하기 위한 매크로.
@@ -107,7 +107,7 @@ pub trait RadixScheme<T> {
 ///
 /// impl<T, F1> RadixScheme<T> for (F1,)
 /// where
-///     F1: Fn(&T) -> usize + Copy,
+///     F1: FnMut(&T) -> usize + Copy,
 /// {
 ///     fn sort(&self, slice: &mut [T]) {
 ///         let (head,) = *self;
@@ -118,8 +118,8 @@ pub trait RadixScheme<T> {
 ///
 /// impl<T, F1, F2> RadixScheme<T> for (F1, F2)
 /// where
-///     F1: Fn(&T) -> usize + Copy,
-///     F2: Fn(&T) -> usize + Copy,
+///     F1: FnMut(&T) -> usize + Copy,
+///     F2: FnMut(&T) -> usize + Copy,
 /// {
 ///     fn sort(&self, slice: &mut [T]) {
 ///         let (head1, head2) = *self;
@@ -130,9 +130,9 @@ pub trait RadixScheme<T> {
 ///
 /// impl<T, F1, F2, F3> RadixScheme<T> for (F1, F2, F3)
 /// where
-///     F1: Fn(&T) -> usize + Copy,
-///     F2: Fn(&T) -> usize + Copy,
-///     F3: Fn(&T) -> usize + Copy,
+///     F1: FnMut(&T) -> usize + Copy,
+///     F2: FnMut(&T) -> usize + Copy,
+///     F3: FnMut(&T) -> usize + Copy,
 /// {
 ///     fn sort(&self, slice: &mut [T]) {
 ///         let (head1, head2, head3) = *self;
@@ -145,17 +145,17 @@ pub trait RadixScheme<T> {
 macro_rules! impl_tuple_scheme {
     () => {
         impl<T> RadixScheme<T> for () {
-            fn sort(&self, _slice: &mut [T]) {}
+            fn sort(&mut self, _slice: &mut [T]) {}
         }
     };
     ($head:ident $(,$tail:ident)*) => {
         impl<T, $head, $($tail,)*> RadixScheme<T> for ($head, $($tail,)*)
         where
-            $head: Fn(&T) -> usize + Copy,
+            $head: FnMut(&T) -> usize + Copy,
             ($($tail,)*) : RadixScheme<T>,
             $($tail: Copy,)*
         {
-            fn sort(&self, slice: &mut [T]) {
+            fn sort(&mut self, slice: &mut [T]) {
                 #[allow(non_snake_case)] // 타입명과 변수명이 동일해 발생하는 name convention warning을 무시합니다.
                 let (head, $($tail,)*) = *self;
                 slice.counting_sort_by_key(head); // 튜플상 앞의 projection이 먼저 수행됩니다.
@@ -174,23 +174,23 @@ impl_tuple_scheme!(
 
 /// Radix Sort를 정의하기 위해 사용되는 projection type
 /// 정적 함수, closure 및 함수객체를 모두 지원하면서 동적 dispatch를 사용하기 위해 정의됨
-pub type Projection<T> = Box<dyn Fn(&T) -> usize>;
+pub type Projection<T> = Box<dyn FnMut(&T) -> usize>;
 
 /// Serial Scheme을 구현하기 위한 struct
 /// Serial Scheme은 projection을 Slice으로 나열하는 방법을 나타냄.
 pub struct SerialScheme<'a, T> {
-    projs: &'a [Projection<T>],
+    projs: &'a mut [Projection<T>],
 }
 
 impl<'a, T> SerialScheme<'a, T> {
-    pub fn new(projs: &'a [Projection<T>]) -> Self {
+    pub fn new(projs: &'a mut [Projection<T>]) -> Self {
         Self { projs }
     }
 }
 
 impl<T> RadixScheme<T> for SerialScheme<'_, T> {
-    fn sort(&self, slice: &mut [T]) {
-        for proj in self.projs {
+    fn sort(&mut self, slice: &mut [T]) {
+        for proj in self.projs.iter_mut() {
             slice.counting_sort_by_key(proj);
         }
     }
@@ -210,7 +210,7 @@ pub trait RadixSortExt<T> {
 }
 
 impl<T> RadixSortExt<T> for &'_ mut [T] {
-    fn radix_sort<S: RadixScheme<T>>(self, scheme: S) {
+    fn radix_sort<S: RadixScheme<T>>(self, mut scheme: S) {
         scheme.sort(self);
     }
 }
@@ -365,7 +365,7 @@ mod tests {
             }));
         }
         let scheme = SerialScheme {
-            projs: &projections[..],
+            projs: &mut projections[..],
         };
         v.as_mut_slice().radix_sort(scheme);
         let expected = vec![
