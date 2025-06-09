@@ -282,6 +282,18 @@ fn is_run_gt(r1: &Run, r2: &Run) -> bool {
 }
 
 /// # Description
+/// Update treshold of galloping mode by the result of galloping count.
+/// if the galloping count is bigger than 1, which is success, decrease the treshold of the galloping mode.
+/// if the galloping count is 1, which is failure, increase it.
+fn update_min_gallop(min_gallop: &mut u32, gallop_cnt: usize) {
+    if gallop_cnt == 1 {
+        *min_gallop += 1;
+    } else if *min_gallop > 1 {
+        *min_gallop -= 1;
+    }
+}
+
+/// # Description
 /// Merge two adjacent run.
 /// Memory optimization is not applied because of panic safety.
 fn merge_two_run<T, F>(
@@ -306,7 +318,7 @@ fn merge_two_run<T, F>(
     let mut i = run1.0;
     let mut j = run2.0;
     let mut k = run1.0;
-    let min_gallop = 3u32;
+    let mut min_gallop = 3u32;
     while k < run2.1 {
         let mut copy_cnt = 1usize;
         if j == run2.1 || comp(&slice[i], &slice[j]).is_le() {
@@ -318,6 +330,7 @@ fn merge_two_run<T, F>(
                 // use is_le to keep stableness.
                 copy_cnt =
                     galloping_count(slice, j, i, run1.1, |r1, target| comp(r1, target).is_le());
+                update_min_gallop(&mut min_gallop, copy_cnt);
             } else {
                 // one-pair-at-a-time mode
                 streak_cnt_1 += 1;
@@ -337,6 +350,7 @@ fn merge_two_run<T, F>(
                 // use is_lt to keep stableness.
                 copy_cnt =
                     galloping_count(slice, i, j, run2.1, |r2, target| comp(r2, target).is_lt());
+                update_min_gallop(&mut min_gallop, copy_cnt);
             } else {
                 // one-pair-at-a-time mode
                 streak_cnt_2 += 1;
