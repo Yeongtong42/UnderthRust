@@ -192,9 +192,10 @@ where
 {
     let len = slice.len();
     for cur_pos in 1..len {
-        let insertion_pos = match is_inc {
-            true => slice[0..cur_pos].partition_point(|x| comp(x, &slice[cur_pos]).is_le()),
-            false => slice[0..cur_pos].partition_point(|x| comp(x, &slice[cur_pos]).is_gt()),
+        let insertion_pos = if is_inc {
+            slice[0..cur_pos].partition_point(|x| comp(x, &slice[cur_pos]).is_le())
+        } else {
+            slice[0..cur_pos].partition_point(|x| comp(x, &slice[cur_pos]).is_gt())
         };
         slice[insertion_pos..=cur_pos].rotate_right(1);
     }
@@ -305,13 +306,14 @@ fn merge_two_run<T, F>(
     let mut i = run1.0;
     let mut j = run2.0;
     let mut k = run1.0;
+    let min_gallop = 3u32;
     while k < run2.1 {
         let mut copy_cnt = 1usize;
         if j == run2.1 || comp(&slice[i], &slice[j]).is_le() {
             if j == run2.1 {
                 // left over, no need to compare.
                 copy_cnt = run1.1 - i;
-            } else if streak_cnt_1 >= 3 {
+            } else if streak_cnt_1 >= min_gallop {
                 // galloping mode
                 // use is_le to keep stableness.
                 copy_cnt =
@@ -330,7 +332,7 @@ fn merge_two_run<T, F>(
             if i == run1.1 {
                 // left over, no need to compare.
                 copy_cnt = run2.1 - j;
-            } else if streak_cnt_2 >= 3 {
+            } else if streak_cnt_2 >= min_gallop {
                 // galloping mode
                 // use is_lt to keep stableness.
                 copy_cnt =
