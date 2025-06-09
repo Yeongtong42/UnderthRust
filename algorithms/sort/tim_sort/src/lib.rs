@@ -120,11 +120,17 @@ where
 /// # Parameters
 /// - `n` : size of the slice to be sorted.
 fn get_min_run_size(n: usize) -> (usize, usize) {
-    let mut min_run_size = n;
-    while min_run_size > 64 {
-        min_run_size = min_run_size >> 1;
+    if n < 64 {
+        return (n, 1);
     }
-    let max_run_cnt = (n / min_run_size) + ((n % min_run_size) > 0) as usize;
+    let min_run_size = {
+        let mut m = n - 1;
+        while m > 64 {
+            m >>= 1;
+        }
+        (m + 1).max(32)
+    };
+    let max_run_cnt = (n - 1) / min_run_size + 1;
     (min_run_size, max_run_cnt)
 }
 
@@ -171,7 +177,7 @@ where
 
     // reverse decrease run
     if !is_run_increase {
-        (&mut slice[run_start_pos..run_end_pos]).reverse();
+        slice[run_start_pos..run_end_pos].reverse();
     }
     run_end_pos
 }
@@ -185,14 +191,12 @@ where
     F: FnMut(&T, &T) -> std::cmp::Ordering,
 {
     let len = slice.len();
-    let mut cur_pos = 1usize;
-    while cur_pos < len {
+    for cur_pos in 1..len {
         let insertion_pos = match is_inc {
             true => slice[0..cur_pos].partition_point(|x| comp(x, &slice[cur_pos]).is_le()),
             false => slice[0..cur_pos].partition_point(|x| comp(x, &slice[cur_pos]).is_gt()),
         };
         slice[insertion_pos..=cur_pos].rotate_right(1);
-        cur_pos += 1;
     }
 }
 
@@ -254,7 +258,7 @@ fn keep_run_stack_invariant<T, F>(
 
 /// # Description
 /// Check if the run_stack keeps it's invariant.
-fn is_run_stack_ok(run_stack: &mut Vec<Run>) -> bool {
+fn is_run_stack_ok(run_stack: &mut [Run]) -> bool {
     let size = run_stack.len();
     if size < 3 {
         return true;
@@ -266,7 +270,8 @@ fn is_run_stack_ok(run_stack: &mut Vec<Run>) -> bool {
     let first = first.1 - first.0;
     let second = second.1 - second.0;
     let third = third.1 - third.0;
-    return first < second && (first + second) < third;
+
+    first < second && (first + second) < third
 }
 
 /// # Description
@@ -384,7 +389,7 @@ where
     cur_idx = cur_idx.min(run_limit);
 
     // binary search range
-    cur_idx = &slice[prev_idx..cur_idx].partition_point(|x| pred(x, &slice[target_idx])) + prev_idx;
+    cur_idx = slice[prev_idx..cur_idx].partition_point(|x| pred(x, &slice[target_idx])) + prev_idx;
     cur_idx - start_idx
 }
 
