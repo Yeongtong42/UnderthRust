@@ -32,7 +32,7 @@ pub fn tim_sort<T: Ord>(slice: &mut [T]) {
 
 /// # Description
 /// Sorts the given slice stable using Tim‑sort algorithm
-/// whith comparator.
+/// with comparator.
 ///
 /// # Type Parameters
 /// - `T`: The element type.
@@ -115,7 +115,7 @@ where
 
 /// # Description
 /// Calculate minimum size of run and maximum count of run in the slice.
-/// Run is a seperated slice to be merged, will be sorted by insertion sort.
+/// Run is a separated slice to be merged, will be sorted by insertion sort.
 ///
 /// # Parameters
 /// - `n` : size of the slice to be sorted.
@@ -135,7 +135,7 @@ fn get_min_run_size(n: usize) -> (usize, usize) {
 }
 
 /// # Description
-/// Sort minimum sized run and append it's size if possible.
+/// Sort minimum sized run and append its size if possible.
 /// This function returns end position of sorted and appended run.
 fn get_sorted_run_from_slice<T, F>(
     slice: &mut [T],
@@ -258,7 +258,7 @@ fn keep_run_stack_invariant<T, F>(
 }
 
 /// # Description
-/// Check if the run_stack keeps it's invariant.
+/// Check if the run_stack keeps its invariant.
 fn is_run_stack_ok(run_stack: &mut [Run]) -> bool {
     let size = run_stack.len();
     if size < 3 {
