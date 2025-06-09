@@ -1,8 +1,9 @@
 //! # Description
 //! Implementation of tim sort.
-use std::collections::VecDeque;
 use std::ptr::copy_nonoverlapping;
 
+/// chunk of slice to be merged
+/// Run describe a range of [first, second).
 type Run = (usize, usize);
 
 /// # Description
@@ -85,10 +86,10 @@ where
     let mut merge_buffer: Vec<T> = Vec::with_capacity(size);
 
     // merge runs using stacks
-    let mut run_stack: VecDeque<Run> = VecDeque::new();
+    let mut run_stack: Vec<Run> = Vec::new();
     // init run stack
     for cur_run in runs {
-        run_stack.push_back(cur_run);
+        run_stack.push(cur_run);
         keep_run_stack_invariant(
             slice,
             &mut compare,
@@ -100,15 +101,15 @@ where
     // merge all run in the stack
     while run_stack.len() > 1 {
         // merge top two run in the stack
-        let cur_run = run_stack.pop_back().unwrap();
+        let cur_run = run_stack.pop().unwrap();
         merge_two_run(
             slice,
             &mut compare,
             merge_buffer.as_mut_ptr(),
-            run_stack.back().unwrap().clone(),
-            cur_run.clone(),
+            *run_stack.last().unwrap(),
+            cur_run,
         );
-        run_stack.back_mut().unwrap().1 = cur_run.1;
+        run_stack.last_mut().unwrap().1 = cur_run.1;
     }
 }
 
@@ -218,14 +219,14 @@ fn keep_run_stack_invariant<T, F>(
     slice: &mut [T],
     mut compare: F,
     merge_buffer: *mut T,
-    run_stack: &mut VecDeque<Run>,
+    run_stack: &mut Vec<Run>,
 ) where
     F: FnMut(&T, &T) -> std::cmp::Ordering,
 {
     while !is_run_stack_ok(run_stack) {
-        let first_from_top = run_stack.pop_back().unwrap();
-        let second_from_top = run_stack.pop_back().unwrap();
-        let third_from_top = run_stack.pop_back().unwrap();
+        let first_from_top = run_stack.pop().unwrap();
+        let second_from_top = run_stack.pop().unwrap();
+        let third_from_top = run_stack.pop().unwrap();
 
         if is_run_gt(&third_from_top, &first_from_top) {
             merge_two_run(
@@ -235,8 +236,8 @@ fn keep_run_stack_invariant<T, F>(
                 second_from_top,
                 first_from_top,
             );
-            run_stack.push_back(third_from_top);
-            run_stack.push_back((second_from_top.0, first_from_top.1));
+            run_stack.push(third_from_top);
+            run_stack.push((second_from_top.0, first_from_top.1));
         } else {
             merge_two_run(
                 slice,
@@ -245,15 +246,15 @@ fn keep_run_stack_invariant<T, F>(
                 third_from_top,
                 second_from_top,
             );
-            run_stack.push_back((third_from_top.0, second_from_top.1));
-            run_stack.push_back(first_from_top);
+            run_stack.push((third_from_top.0, second_from_top.1));
+            run_stack.push(first_from_top);
         }
     }
 }
 
 /// # Description
 /// Check if the run_stack keeps it's invariant.
-fn is_run_stack_ok(run_stack: &mut VecDeque<Run>) -> bool {
+fn is_run_stack_ok(run_stack: &mut Vec<Run>) -> bool {
     let size = run_stack.len();
     if size < 3 {
         return true;
