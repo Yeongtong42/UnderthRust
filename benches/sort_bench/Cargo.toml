@@ -1,0 +1,22 @@
+[package]
+name = "sort_bench"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+
+[dev-dependencies]
+criterion = { git = "https://github.com/bheisler/criterion.rs", rev = "260e2f1", features = ["html_reports"] }
+rand = "0.9.0"
+heap_on_slice = {path = "../../algorithms/adapter/heap_on_slice"}
+insertion_sort = {path = "../../algorithms/sort/insertion_sort"}
+merge_sort = {path = "../../algorithms/sort/merge_sort"}
+quick_sort = {path = "../../algorithms/sort/quick_sort"}
+intro_sort = {path = "../../algorithms/sort/intro_sort"}
+tim_sort = {path = "../../algorithms/sort/tim_sort"}
+counting_sort = {path = "../../algorithms/sort/counting_sort"}
+radix_sort = {path = "../../algorithms/sort/radix_sort"}
+
+[[bench]]
+name = "sort_benchmark"
+harness = false
