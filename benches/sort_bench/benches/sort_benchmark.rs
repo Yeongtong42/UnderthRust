@@ -8,16 +8,12 @@ use rand::{Rng, SeedableRng};
 // sorting algorithms to compare
 // use counting_sort::TryCountingSort;
 // use radix_sort::*;
-use heap_on_slice::{DefaultComparator, max_heap::MaxHeap};
+use heap_on_slice::max_heap::heap_sort;
 use insertion_sort::insertion_sort;
 use intro_sort::intro_sort;
 use merge_sort::merge_sort;
 use quick_sort::{binary_quick_sort, ternary_quick_sort};
-use tim_sort::tim_sort;
-
-fn heap_sort_wrapper<T: Ord>(slice: &mut [T]) {
-    MaxHeap::heap_sort(&DefaultComparator, slice);
-}
+// use tim_sort::tim_sort;
 
 fn criterion_benchmark(c: &mut Criterion) {
     let seed: u64 = 42;
@@ -49,7 +45,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         group.bench_with_input(BenchmarkId::new("heap", size), size, |b, &size| {
             b.iter_batched_ref(
                 || vec[0..size].to_vec(),
-                |mut data| heap_sort_wrapper(&mut data),
+                |mut data| heap_sort(&mut data),
                 BatchSize::SmallInput,
             );
         });
