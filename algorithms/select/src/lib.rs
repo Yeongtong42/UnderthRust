@@ -1,6 +1,46 @@
+//! # select
+//!
+//! Ord 트레잇을 구한한 타입 T의 슬라이스에 대하여 select를 수행해하는 알고리즘의 구현체를 제공합니다.
+//!
+//! ## 특징
+//! - fully safe(no unsafe function used).
+//!
+//! ## 예시
+//! ```rust
+//! use select::*;
+//!
+//! let mut slice = [3, 2, 10, 5, -6, 77];
+//! assert_eq!(select_min_max(&slice).unwrap(), (4, 5));
+//! select_nth_elem_random(&mut slice, 3);
+//! assert_eq!(slice[3], 5);
+//! select_nth_elem_strict(&mut slice, 4);
+//! assert_eq!(slice[4], 10);
+//!
+//! ```
+//!
+//! ## 구현체
+//! - `select_min_max`: 최소/최대 원소의 인덱스의 튜플을 Option으로 감싸서 제공합니다.
+//! - `select_nth_elem_random`: 랜덤으로 피벗을 고르는 quick select 입니다.
+//! - `select_nth_elem_strict`: median of medians에 기반한 quick select 입니다.
+//!
+//! ## 참조
+//! - Introduction to algorithms 4th ed을 기준으로 구현했습니다.
 use rand::random_range;
 use std::mem::swap;
 
+/// 슬라이스에서 최소값과 최대값의 인덱스를 반환합니다.
+///
+/// 입력된 슬라이스가 비어 있다면 `None`을 반환하고,
+/// 그렇지 않으면 `(min_index, max_index)` 형태로 반환합니다.
+///
+/// 시간 복잡도는 O(N)이며, 짝수 개의 요소에 대해 pair-wise 비교를 수행해 최적화를 시도합니다.
+///
+/// # 예시
+///
+/// ```
+/// let slice = [3, 2, 10, 5, -6, 77];
+/// assert_eq!(select::select_min_max(&slice), Some((4, 5)));
+/// ```
 pub fn select_min_max<T: Ord>(slice: &[T]) -> Option<(usize, usize)> {
     if slice.is_empty() {
         return None;
@@ -38,7 +78,15 @@ pub fn select_min_max<T: Ord>(slice: &[T]) -> Option<(usize, usize)> {
     Some(result)
 }
 
-/// will be moved to the quick sort crate
+/// 주어진 피벗 인덱스를 기준으로 슬라이스를 Hoare 파티션 방식으로 분할합니다.
+///
+/// 반환값은 피벗이 위치한 최종 인덱스를 의미하며,
+/// 슬라이스는 `[<= pivot | > pivot]` 구조로 재배열됩니다.
+///
+/// 이 함수는 내부 구현 용도로 사용되며, 공개되지 않습니다.
+///
+/// # Panics
+/// - 슬라이스 길이가 0이면 패닉을 발생시킬 수 있습니다.
 fn hoare_partition<T: Ord>(slice: &mut [T], pivot: usize) -> usize {
     slice.swap(0, pivot);
 
@@ -58,6 +106,26 @@ fn hoare_partition<T: Ord>(slice: &mut [T], pivot: usize) -> usize {
     r
 }
 
+/// 슬라이스에서 n번째로 작은 값을 n번째 인덱스로 이동시킵니다.
+///
+/// 이 알고리즘은 Quick Select를 기반으로 하며,
+/// 피벗은 무작위로 선택됩니다. 따라서 평균적으로 O(N) 시간복잡도를 가지지만,
+/// 최악의 경우 O(N²)까지 갈 수 있습니다.
+/// 후술할 strict 버젼보다 대부분의 경우에 더 빠릅니다.
+///
+/// # 매개변수
+/// - `slice`: 정렬 대상 슬라이스입니다.
+/// - `n`: 정렬하여 얻고자 하는 인덱스입니다.
+///
+/// # 제약
+/// - `n >= slice.len()`인 경우 아무 동작도 하지 않습니다.
+///
+/// # 예시
+/// ```
+/// let mut slice = [3, 2, 10, 5, -6, 77];
+/// select::select_nth_elem_random(&mut slice, 3);
+/// assert_eq!(slice[3], 5); // 세 번째로 작은 원소
+/// ```
 pub fn select_nth_elem_random<T: Ord>(slice: &mut [T], n: usize) {
     let len = slice.len();
     if len == 0 || len <= n {
@@ -82,6 +150,16 @@ pub fn select_nth_elem_random<T: Ord>(slice: &mut [T], n: usize) {
     }
 }
 
+/// 슬라이스에서 stride를 이용해 5개의 원소를 제자리에서 정렬합니다.
+///
+/// 이 함수는 median of medians 알고리즘을 위한 보조 함수이며,
+/// stride가 1이 아닌 경우에도 작동하도록 설계되어 있습니다.
+///
+/// # 예시
+/// - `slice[start + i * stride]` 형식으로 5개의 원소가 존재해야 합니다.
+///
+/// # 제약
+/// - 슬라이스가 요구되는 범위보다 작다면 잘못된 동작이 발생할 수 있습니다.
 fn sort_five_in_place_with_stride<T: Ord>(slice: &mut [T], start: usize, stride: usize) {
     // sort
     for i in 0..4 {
@@ -95,11 +173,29 @@ fn sort_five_in_place_with_stride<T: Ord>(slice: &mut [T], start: usize, stride:
     }
 }
 
+/// median of medians 알고리즘을 기반으로 n번째로 작은 값을 슬라이스의 n번째 인덱스로 이동시킵니다.
+///
+/// 최악의 경우에도 O(N) 시간복잡도를 보장합니다.
+/// 피벗 선택을 median of medians 방식으로 수행하여, 균형 잡힌 분할을 유도합니다.
+///
+/// # 매개변수
+/// - `slice`: 정렬 대상 슬라이스입니다.
+/// - `n`: 정렬하여 얻고자 하는 인덱스입니다.
+///
+/// # 예시
+/// ```
+/// let mut slice = [3, 2, 10, 5, -6, 77];
+/// select::select_nth_elem_strict(&mut slice, 4);
+/// assert_eq!(slice[4], 10);
+/// ```
 pub fn select_nth_elem_strict<T: Ord>(slice: &mut [T], n: usize) {
     // sort left over
     let mut l = 0usize;
     let r = slice.len();
     let mut target = n;
+    if r == 0 || r <= n {
+        return;
+    }
     while ((r - l) % 5) != 0 {
         for i in (l + 1)..r {
             if slice[l] > slice[i] {
@@ -151,6 +247,12 @@ mod test {
         hoare_partition, select_min_max, select_nth_elem_random, select_nth_elem_strict,
         sort_five_in_place_with_stride,
     };
+
+    use rand::distr::StandardUniform;
+    use rand::rngs::StdRng;
+    use rand::{Rng, SeedableRng};
+
+    const TEST_SIZE: usize = 10_000;
 
     #[test]
     fn test_select_min_max() {
@@ -249,5 +351,31 @@ mod test {
         select_nth_elem_strict(&mut arr1, pivot);
         println!("{:?}", arr1);
         assert_eq!(arr1[pivot], 9);
+    }
+
+    #[test]
+    fn test_big_slice_random() {
+        let seed: u64 = 42;
+        let rng = StdRng::seed_from_u64(seed);
+
+        let mut vec: Vec<i32> = rng.sample_iter(StandardUniform).take(TEST_SIZE).collect();
+        let pivot = TEST_SIZE / 2;
+
+        select_nth_elem_random(&mut vec, pivot);
+
+        assert!(is_partitioned(&vec, pivot));
+    }
+
+    #[test]
+    fn test_big_slice_strict() {
+        let seed: u64 = 42;
+        let rng = StdRng::seed_from_u64(seed);
+
+        let mut vec: Vec<i32> = rng.sample_iter(StandardUniform).take(TEST_SIZE).collect();
+        let pivot = TEST_SIZE / 2;
+
+        select_nth_elem_strict(&mut vec, pivot);
+
+        assert!(is_partitioned(&vec, pivot));
     }
 }
