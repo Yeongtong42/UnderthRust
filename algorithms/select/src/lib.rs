@@ -213,18 +213,18 @@ pub fn select_nth_elem_strict<T: Ord>(slice: &mut [T], n: usize) {
 
     // median of medians
     // grouping
-    let group_size = (r - l) / 5;
-    for start in l..(l + group_size) {
-        sort_five_in_place_with_stride(slice, start, group_size);
+    let num_group = (r - l) / 5;
+    for start in l..(l + num_group) {
+        sort_five_in_place_with_stride(slice, start, num_group);
     }
 
-    // get pivot using median of median
-    // select median group
+    // get pivot using median of medians
+    // select median among all groups
     select_nth_elem_strict(
-        &mut slice[(l + 2 * group_size)..(l + 3 * group_size)],
-        group_size / 2,
+        &mut slice[(l + 2 * num_group)..(l + 3 * num_group)],
+        num_group / 2,
     );
-    let mut median_of_median = 2 * group_size + group_size / 2; // use median of median as a pivot
+    let mut median_of_median = 2 * num_group + num_group / 2; // use median of median as a pivot
     // partition slice using median of median as a pivot
     median_of_median = hoare_partition(&mut slice[l..r], median_of_median);
 
