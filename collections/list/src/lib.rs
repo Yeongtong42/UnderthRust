@@ -1,8 +1,13 @@
+mod into_iter;
+mod iter;
+mod iter_mut;
 mod node;
 
+use crate::into_iter::*;
+use crate::iter::*;
+use crate::iter_mut::*;
 use crate::node::*;
 use std::default::Default;
-use std::iter;
 use std::ptr::NonNull;
 use std::result::Result;
 
@@ -37,7 +42,7 @@ impl<T> List<T> {
     fn insert_when_empty(&mut self, node: NonNull<Node<T>>) {
         self.head = Some(node);
         self.tail = Some(node);
-        self.len += 1;
+        self.len = 1;
     }
     fn pop_last(&mut self) -> Result<T, &str> {
         let result = if let Some(node) = self.head {
@@ -193,10 +198,18 @@ impl<T> List<T> {
         }
     }
 
-    // iter()
-    // iterMut()
     // into_iter()
     // from_iter()
+}
+
+impl<'a, T> List<T> {
+    pub fn iter(&'a self) -> Iter<'a, T> {
+        Iter::new(self)
+    }
+
+    pub fn iter_mut(&'a mut self) -> IterMut<'a, T> {
+        IterMut::new(self)
+    }
 }
 
 // trait implementations
@@ -243,10 +256,33 @@ where
 {
 }
 
+impl<'a, T> std::iter::IntoIterator for &'a List<T> {
+    type Item = &'a T;
+    type IntoIter = Iter<'a, T>;
+    fn into_iter(self) -> Self::IntoIter {
+        Iter::new(self)
+    }
+}
+
+impl<'a, T> std::iter::IntoIterator for &'a mut List<T> {
+    type Item = &'a mut T;
+    type IntoIter = IterMut<'a, T>;
+    fn into_iter(self) -> Self::IntoIter {
+        IterMut::new(self)
+    }
+}
+
+impl<T> std::iter::IntoIterator for List<T> {
+    type Item = T;
+    type IntoIter = IntoIter<T>;
+    fn into_iter(self) -> Self::IntoIter {
+        IntoIter::new(self)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rand::*;
 
     #[test]
     fn test_single_node() {
@@ -365,5 +401,79 @@ mod tests {
         l.push_front(2);
         l.push_front(1);
         assert_eq!(l, List::<i32>::from_slice(&[1, 2, 3]));
+    }
+
+    #[test]
+    fn test_iter() {
+        let l = List::<i32>::from_slice(&[1, 2, 3, 4, 5]);
+        let mut itr = l.iter();
+        assert_eq!(*itr.next().unwrap(), 1);
+        assert_eq!(*itr.next().unwrap(), 2);
+        assert_eq!(*itr.next().unwrap(), 3);
+        // let data = l.get(2); // with this line, must not compile. borrow check.
+        assert_eq!(*itr.next().unwrap(), 4);
+        assert_eq!(*itr.next().unwrap(), 5);
+        assert_eq!(itr.next(), None);
+
+        let mut cnt = 1;
+        for i in l.iter() {
+            assert_eq!(*i, cnt);
+            cnt += 1;
+        }
+
+        let mut cnt = 3;
+        for i in l.iter().map(|x| x * 3) {
+            assert_eq!(i, cnt);
+            cnt += 3;
+        }
+    }
+    #[test]
+    fn test_iter_mut() {
+        let mut l = List::<i32>::from_slice(&[1, 2, 3, 4, 5]);
+        let mut itr = l.iter_mut();
+        assert_eq!(*itr.next().unwrap(), 1);
+        assert_eq!(*itr.next().unwrap(), 2);
+        assert_eq!(*itr.next().unwrap(), 3);
+        // let data = l.get(2); // with this line, must not compile. borrow check.
+        assert_eq!(*itr.next().unwrap(), 4);
+        assert_eq!(*itr.next().unwrap(), 5);
+        assert_eq!(itr.next(), None);
+
+        let mut cnt = 1;
+        for i in l.iter_mut() {
+            assert_eq!(*i, cnt);
+            cnt += 1;
+        }
+
+        let mut cnt = 3;
+        l.iter_mut().for_each(|x| *x *= 3); // change content through IterMut
+        for i in l.iter() {
+            assert_eq!(*i, cnt);
+            cnt += 3;
+        }
+    }
+    #[test]
+    fn test_into_iter_trait() {
+        let mut l = List::<i32>::from_slice(&[1, 2, 3, 4, 5]);
+
+        // test for &List
+        let mut val = 1;
+        for i in &l {
+            assert_eq!(val, *i);
+            val += 1;
+        }
+        // test for &mut List
+        let mut val = 2;
+        for i in &mut l {
+            *i *= 2;
+            assert_eq!(val, *i);
+            val += 2;
+        }
+        // test for List
+        let mut val = 2;
+        for i in l {
+            assert_eq!(val, i);
+            val += 2;
+        }
     }
 }
