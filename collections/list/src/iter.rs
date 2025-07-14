@@ -1,6 +1,6 @@
 use super::List;
 use crate::node::*;
-use std::iter::Iterator;
+use std::iter::{FusedIterator, Iterator};
 use std::marker::PhantomData;
 use std::ptr::NonNull;
 
@@ -32,4 +32,23 @@ impl<'a, T> Iterator for Iter<'a, T> {
             None
         }
     }
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (self.len, Some(self.len)) // exact size
+    }
 }
+
+impl<T> DoubleEndedIterator for Iter<'_, T> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        if let Some(cur_node) = self.source {
+            self.source = Node::get_prev_node(cur_node);
+            self.len += 1;
+            unsafe { Some(cur_node.as_ref().get_data_ref()) }
+        } else {
+            None
+        }
+    }
+}
+
+impl<T> ExactSizeIterator for Iter<'_, T> {}
+
+impl<T> FusedIterator for Iter<'_, T> {}

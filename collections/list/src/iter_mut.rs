@@ -1,6 +1,6 @@
 use super::List;
 use crate::node::*;
-use std::iter::Iterator;
+use std::iter::{ExactSizeIterator, FusedIterator, Iterator};
 use std::marker::PhantomData;
 use std::ptr::NonNull;
 
@@ -32,4 +32,23 @@ impl<'a, T> Iterator for IterMut<'a, T> {
             None
         }
     }
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (self.len, Some(self.len)) // exact size
+    }
 }
+
+impl<T> DoubleEndedIterator for IterMut<'_, T> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        if let Some(mut cur_node) = self.source {
+            self.source = Node::get_prev_node(cur_node);
+            self.len += 1;
+            unsafe { Some(cur_node.as_mut().get_data_mut_ref()) }
+        } else {
+            None
+        }
+    }
+}
+
+impl<T> ExactSizeIterator for IterMut<'_, T> {}
+
+impl<T> FusedIterator for IterMut<'_, T> {}
