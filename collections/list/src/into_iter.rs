@@ -1,7 +1,7 @@
 use super::List;
 use crate::node::*;
 use std::boxed::Box;
-use std::iter::Iterator;
+use std::iter::{ExactSizeIterator, FusedIterator, Iterator};
 use std::ptr::NonNull;
 
 #[derive(Debug)]
@@ -37,4 +37,11 @@ impl<T> Iterator for IntoIter<T> {
             None
         }
     }
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (self.len, Some(self.len)) // exact size
+    }
 }
+
+impl<T> ExactSizeIterator for IntoIter<T> {}
+
+impl<T> FusedIterator for IntoIter<T> {}
