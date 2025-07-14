@@ -25,10 +25,9 @@ impl<'a, T> Iterator for IterMut<'a, T> {
     type Item = &'a mut T;
     fn next(&mut self) -> Option<Self::Item> {
         if let Some(mut cur_node) = self.source {
-            let result = unsafe { Some(cur_node.as_mut().get_data_mut_ref()) };
             self.source = Node::get_next_node(cur_node);
             self.len -= 1;
-            result
+            unsafe { Some(cur_node.as_mut().get_data_mut_ref()) }
         } else {
             None
         }

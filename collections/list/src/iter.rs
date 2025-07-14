@@ -25,10 +25,9 @@ impl<'a, T> Iterator for Iter<'a, T> {
     type Item = &'a T;
     fn next(&mut self) -> Option<Self::Item> {
         if let Some(cur_node) = self.source {
-            let result = unsafe { Some(cur_node.as_ref().get_data_ref()) };
             self.source = Node::get_next_node(cur_node);
             self.len -= 1;
-            result
+            unsafe { Some(cur_node.as_ref().get_data_ref()) }
         } else {
             None
         }
