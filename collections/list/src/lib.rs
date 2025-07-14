@@ -280,6 +280,16 @@ impl<T> std::iter::IntoIterator for List<T> {
     }
 }
 
+impl<T> std::iter::FromIterator<T> for List<T> {
+    fn from_iter<Itr: IntoIterator<Item = T>>(iter: Itr) -> Self {
+        let mut l = List::<T>::new();
+        for data in iter {
+            l.push_back(data);
+        }
+        l
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -475,5 +485,10 @@ mod tests {
             assert_eq!(val, i);
             val += 2;
         }
+    }
+    #[test]
+    fn test_from_iter() {
+        let l: List<i32> = [1, 2, 3, 4, 5, 6, 7].into_iter().collect();
+		assert_eq!(l, List::<i32>::from_slice(&[1, 2, 3, 4, 5, 6, 7]));
     }
 }
