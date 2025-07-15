@@ -1,3 +1,5 @@
+//! A doubly-linked list implementation.
+
 mod into_iter;
 mod iter;
 mod iter_mut;
@@ -11,7 +13,19 @@ use std::default::Default;
 use std::ptr::NonNull;
 use std::result::Result;
 
-// data types
+/// # 이중 연결 리스트
+///
+/// `List`는 이중 연결 리스트를 나타냅니다.
+///
+/// # 제네릭
+///
+/// * `T`: 리스트에 저장될 요소의 타입입니다.
+///
+/// # 필드
+///
+/// * `len`: 리스트의 길이입니다.
+/// * `head`: 리스트의 첫 번째 노드를 가리키는 포인터입니다.
+/// * `tail`: 리스트의 마지막 노드를 가리키는 포인터입니다.
 #[derive(Debug)]
 pub struct List<T> {
     len: usize,
@@ -21,13 +35,35 @@ pub struct List<T> {
 
 // private methods
 impl<T> List<T> {
+    /// # 새 노드를 힙에 할당합니다.
+    ///
+    /// 이 함수는 `data`를 포함하는 새로운 `Node`를 힙에 할당하고,
+    /// 그 노드를 가리키는 `NonNull` 포인터를 반환합니다.
+    ///
+    /// # 인수
+    ///
+    /// * `data`: 노드에 저장될 데이터입니다.
+    ///
+    /// # 반환값
+    ///
+    /// 새로 할당된 노드를 가리키는 `NonNull` 포인터입니다.
     fn alloc_node(data: T) -> NonNull<Node<T>> {
         let boxed_new_node = Box::new(Node::<T>::new(data));
-        NonNull::new(Box::into_raw(boxed_new_node)).unwrap() // fuck
+        NonNull::new(Box::into_raw(boxed_new_node)).unwrap()
     }
-    // fn free_node(node: NonNull<Node<T>>) {
-    //     unsafe { drop(Box::from_raw(node.as_ptr())) }
-    // }
+
+    /// # 지정된 위치의 노드에 대한 포인터를 반환합니다.
+    ///
+    /// 이 함수는 리스트의 `pos` 위치에 있는 노드를 가리키는 `NonNull` 포인터를 반환합니다.
+    /// `pos`가 범위를 벗어나면 `None`을 반환합니다.
+    ///
+    /// # 인수
+    ///
+    /// * `pos`: 찾고자 하는 노드의 위치입니다.
+    ///
+    /// # 반환값
+    ///
+    /// `pos` 위치의 노드를 가리키는 `Option<NonNull<Node<T>>>`입니다.
     fn at(&self, pos: usize) -> Option<NonNull<Node<T>>> {
         if pos >= self.len() {
             return None;
@@ -39,11 +75,28 @@ impl<T> List<T> {
         }
         Some(target_node)
     }
+
+    /// # 리스트가 비어 있을 때 노드를 삽입합니다.
+    ///
+    /// 이 함수는 리스트가 비어 있을 때 `node`를 첫 번째이자 마지막 노드로 설정합니다.
+    ///
+    /// # 인수
+    ///
+    /// * `node`: 삽입할 노드입니다.
     fn insert_when_empty(&mut self, node: NonNull<Node<T>>) {
         self.head = Some(node);
         self.tail = Some(node);
         self.len = 1;
     }
+
+    /// # 리스트의 마지막 요소를 제거하고 반환합니다.
+    ///
+    /// 이 함수는 리스트에 요소가 하나만 있을 때 그 요소를 제거하고 데이터를 반환합니다.
+    /// 리스트가 비어 있으면 에러를 반환합니다.
+    ///
+    /// # 반환값
+    ///
+    /// 제거된 요소의 데이터를 담은 `Result<T, &str>`입니다.
     fn pop_last(&mut self) -> Result<T, &str> {
         let result = if let Some(node) = self.head {
             unsafe { Ok((*Box::from_raw(node.as_ptr())).get_data()) }
@@ -59,6 +112,16 @@ impl<T> List<T> {
 
 // public methods
 impl<T> List<T> {
+    /// # 비어 있는 `List`를 생성합니다.
+    ///
+    /// # 예제
+    ///
+    /// ```
+    /// use list::List;
+    ///
+    /// let list = List::<i32>::new();
+    /// assert!(list.is_empty());
+    /// ```
     pub fn new() -> Self {
         Self {
             len: 0usize,
@@ -66,6 +129,25 @@ impl<T> List<T> {
             tail: None,
         }
     }
+
+    /// # 슬라이스에서 `List`를 생성합니다.
+    ///
+    /// # 제네릭
+    ///
+    /// * `T`: `Clone` 트레이트를 구현해야 합니다.
+    ///
+    /// # 인수
+    ///
+    /// * `slice`: `List`를 생성하는 데 사용될 슬라이스입니다.
+    ///
+    /// # 예제
+    ///
+    /// ```
+    /// use list::List;
+    ///
+    /// let list = List::from_slice(&[1, 2, 3]);
+    /// assert_eq!(list.len(), 3);
+    /// ```
     pub fn from_slice(slice: &[T]) -> Self
     where
         T: Clone,
@@ -76,14 +158,51 @@ impl<T> List<T> {
         }
         list
     }
+
+    /// # 리스트의 요소 수를 반환합니다.
+    ///
+    /// # 예제
+    ///
+    /// ```
+    /// use list::List;
+    ///
+    /// let mut list = List::new();
+    /// list.push_back(1);
+    /// assert_eq!(list.len(), 1);
+    /// ```
     pub fn len(&self) -> usize {
         self.len
     }
+
+    /// # 리스트가 비어 있는지 확인합니다.
+    ///
+    /// # 예제
+    ///
+    /// ```
+    /// use list::List;
+    ///
+    /// let list = List::<i32>::new();
+    /// assert!(list.is_empty());
+    /// ```
     pub fn is_empty(&self) -> bool {
         self.len == 0usize
     }
 
-    // 삽입
+    /// # 리스트의 맨 앞에 요소를 추가합니다.
+    ///
+    /// # 인수
+    ///
+    /// * `data`: 추가할 요소입니다.
+    ///
+    /// # 예제
+    ///
+    /// ```
+    /// use list::List;
+    ///
+    /// let mut list = List::new();
+    /// list.push_front(1);
+    /// assert_eq!(list.len(), 1);
+    /// ```
     pub fn push_front(&mut self, data: T) {
         let new_node = List::alloc_node(data);
         if self.is_empty() {
@@ -94,6 +213,22 @@ impl<T> List<T> {
             self.len += 1;
         }
     }
+
+    /// # 리스트의 맨 뒤에 요소를 추가합니다.
+    ///
+    /// # 인수
+    ///
+    /// * `data`: 추가할 요소입니다.
+    ///
+    /// # 예제
+    ///
+    /// ```
+    /// use list::List;
+    ///
+    /// let mut list = List::new();
+    /// list.push_back(1);
+    /// assert_eq!(list.len(), 1);
+    /// ```
     pub fn push_back(&mut self, data: T) {
         let new_node = List::alloc_node(data);
         if self.is_empty() {
@@ -104,6 +239,27 @@ impl<T> List<T> {
             self.len += 1;
         }
     }
+
+    /// # 지정된 위치에 요소를 삽입합니다.
+    ///
+    /// # 인수
+    ///
+    /// * `data`: 삽입할 요소입니다.
+    /// * `pos`: 요소를 삽입할 위치입니다.
+    ///
+    /// # 반환값
+    ///
+    /// 삽입에 성공하면 `Ok(())`를, `pos`가 범위를 벗어나면 `Err`를 반환합니다.
+    ///
+    /// # 예제
+    ///
+    /// ```
+    /// use list::List;
+    ///
+    /// let mut list = List::from_slice(&[1, 3]);
+    /// list.insert_at(2, 1).unwrap();
+    /// assert_eq!(list.len(), 3);
+    /// ```
     pub fn insert_at(&mut self, data: T, pos: usize) -> Result<(), &str> {
         // push back
         match pos {
@@ -128,6 +284,24 @@ impl<T> List<T> {
         }
     }
 
+    /// # 리스트의 첫 번째 요소를 제거하고 반환합니다.
+    ///
+    /// 리스트가 비어 있으면 `Err`를 반환합니다.
+    ///
+    /// # 반환값
+    ///
+    /// 제거된 요소의 데이터를 담은 `Result<T, &str>`입니다.
+    ///
+    /// # 예제
+    ///
+    /// ```
+    /// use list::List;
+    ///
+    /// let mut list = List::from_slice(&[1, 2]);
+    /// assert_eq!(list.pop_front(), Ok(1));
+    /// assert_eq!(list.pop_front(), Ok(2));
+    /// assert!(list.pop_front().is_err());
+    /// ```
     pub fn pop_front(&mut self) -> Result<T, &str> {
         if self.len == 0 {
             Err("Error : out of range.")
@@ -141,6 +315,25 @@ impl<T> List<T> {
             result
         }
     }
+
+    /// # 리스트의 마지막 요소를 제거하고 반환합니다.
+    ///
+    /// 리스트가 비어 있으면 `Err`를 반환합니다.
+    ///
+    /// # 반환값
+    ///
+    /// 제거된 요소의 데이터를 담은 `Result<T, &str>`입니다.
+    ///
+    /// # 예제
+    ///
+    /// ```
+    /// use list::List;
+    ///
+    /// let mut list = List::from_slice(&[1, 2]);
+    /// assert_eq!(list.pop_back(), Ok(2));
+    /// assert_eq!(list.pop_back(), Ok(1));
+    /// assert!(list.pop_back().is_err());
+    /// ```
     pub fn pop_back(&mut self) -> Result<T, &str> {
         if self.len == 0 {
             Err("Error : out of range.")
@@ -155,6 +348,27 @@ impl<T> List<T> {
         }
     }
 
+    /// # 지정된 위치의 요소를 제거하고 반환합니다.
+    ///
+    /// `pos`가 범위를 벗어나면 `Err`를 반환합니다.
+    ///
+    /// # 인수
+    ///
+    /// * `pos`: 제거할 요소의 위치입니다.
+    ///
+    /// # 반환값
+    ///
+    /// 제거된 요소의 데이터를 담은 `Result<T, &str>`입니다.
+    ///
+    /// # 예제
+    ///
+    /// ```
+    /// use list::List;
+    ///
+    /// let mut list = List::from_slice(&[1, 2, 3]);
+    /// assert_eq!(list.get(1), Ok(2));
+    /// assert_eq!(list.len(), 2);
+    /// ```
     pub fn get(&mut self, pos: usize) -> Result<T, &str> {
         if pos == 0 {
             return self.pop_front();
@@ -169,6 +383,27 @@ impl<T> List<T> {
             Err("Error : pos out of range.")
         }
     }
+
+    /// # 지정된 위치의 요소에 대한 참조를 반환합니다.
+    ///
+    /// `pos`가 범위를 벗어나면 `Err`를 반환합니다.
+    ///
+    /// # 인수
+    ///
+    /// * `pos`: 참조할 요소의 위치입니다.
+    ///
+    /// # 반환값
+    ///
+    /// 요소에 대한 참조를 담은 `Result<&T, &str>`입니다.
+    ///
+    /// # 예제
+    ///
+    /// ```
+    /// use list::List;
+    ///
+    /// let list = List::from_slice(&[1, 2, 3]);
+    /// assert_eq!(list.get_ref(1), Ok(&2));
+    /// ```
     pub fn get_ref(&self, pos: usize) -> Result<&T, &str> {
         if let Some(node) = self.at(pos) {
             unsafe { Ok(node.as_ref().get_data_ref()) }
@@ -176,6 +411,30 @@ impl<T> List<T> {
             Err("Error : pos out of range.")
         }
     }
+
+    /// # 지정된 위치의 요소에 대한 가변 참조를 반환합니다.
+    ///
+    /// `pos`가 범위를 벗어나면 `Err`를 반환합니다.
+    ///
+    /// # 인수
+    ///
+    /// * `pos`: 참조할 요소의 위치입니다.
+    ///
+    /// # 반환값
+    ///
+    /// 요소에 대한 가변 참조를 담은 `Result<&mut T, &str>`입니다.
+    ///
+    /// # 예제
+    ///
+    /// ```
+    /// use list::List;
+    ///
+    /// let mut list = List::from_slice(&[1, 2, 3]);
+    /// if let Ok(val) = list.get_mut_ref(1) {
+    ///     *val = 42;
+    /// }
+    /// assert_eq!(list.get_ref(1), Ok(&42));
+    /// ```
     pub fn get_mut_ref(&mut self, pos: usize) -> Result<&mut T, &str> {
         if let Some(mut node) = self.at(pos) {
             unsafe { Ok(node.as_mut().get_data_mut_ref()) }
@@ -183,6 +442,26 @@ impl<T> List<T> {
             Err("Error : pos out of range.")
         }
     }
+
+    /// # 지정된 위치의 요소를 제거합니다.
+    ///
+    /// # 인수
+    ///
+    /// * `pos`: 제거할 요소의 위치입니다.
+    ///
+    /// # 반환값
+    ///
+    /// 제거에 성공하면 `Ok(())`를, `pos`가 범위를 벗어나면 `Err`를 반환합니다.
+    ///
+    /// # 예제
+    ///
+    /// ```
+    /// use list::List;
+    ///
+    /// let mut list = List::from_slice(&[1, 2, 3]);
+    /// list.erase_at(1).unwrap();
+    /// assert_eq!(list.len(), 2);
+    /// ```
     pub fn erase_at(&mut self, pos: usize) -> Result<(), &str> {
         let result = self.get(pos);
         if result.is_ok() {
@@ -191,22 +470,55 @@ impl<T> List<T> {
             Err(result.err().unwrap())
         }
     }
+
+    /// # 리스트의 모든 요소를 제거합니다.
+    ///
+    /// # 예제
+    ///
+    /// ```
+    /// use list::List;
+    ///
+    /// let mut list = List::from_slice(&[1, 2, 3]);
+    /// list.clear();
+    /// assert!(list.is_empty());
+    /// ```
     pub fn clear(&mut self) {
         // consume all node
         while self.pop_back().is_ok() {
             // do nothing
         }
     }
-
-    // into_iter()
-    // from_iter()
 }
 
 impl<'a, T> List<T> {
+    /// # 리스트에 대한 반복자를 반환합니다.
+    ///
+    /// # 예제
+    ///
+    /// ```
+    /// use list::List;
+    ///
+    /// let list = List::from_slice(&[1, 2, 3]);
+    /// let mut iter = list.iter();
+    /// assert_eq!(iter.next(), Some(&1));
+    /// ```
     pub fn iter(&'a self) -> Iter<'a, T> {
         Iter::new(self)
     }
 
+    /// # 리스트에 대한 가변 반복자를 반환합니다.
+    ///
+    /// # 예제
+    ///
+    /// ```
+    /// use list::List;
+    ///
+    /// let mut list = List::from_slice(&[1, 2, 3]);
+    /// for val in list.iter_mut() {
+    ///     *val *= 2;
+    /// }
+    /// assert_eq!(list.get_ref(0), Ok(&2));
+    /// ```
     pub fn iter_mut(&'a mut self) -> IterMut<'a, T> {
         IterMut::new(self)
     }
